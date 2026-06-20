@@ -12,4 +12,4 @@
 - iPhone想定、まずはウェブで試作
 
 ## ファイル一覧
-- zukan_detail_page_mockup.html … 図鑑の詳細ページ（コビト1体の詳細）
+- 02-zukan-detail.html … 図鑑の詳細ページ（コビト1体の詳細）
