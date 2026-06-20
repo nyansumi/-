@@ -1,0 +1,130 @@
+<h2 class="sr-only">「発見の瞬間」の出現エフェクト試作。植物にかざして見つけると、光がはじけ葉が開きキラキラが舞ってコビトが飛び出す演出を、複数のダミーキャラとテンポ違いで繰り返し体験できます。</h2>
+<style>
+.ef-corner{position:absolute;width:22px;height:22px;border:2px solid rgba(255,255,255,.7)}
+.ef-spark{position:absolute;left:50%;top:46%;width:13px;height:13px;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)}
+.ef-btn{border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:500;cursor:pointer}
+.ef-pill{border:0.5px solid var(--color-border-secondary);border-radius:20px;padding:7px 12px;font-size:12px;cursor:pointer;background:var(--color-background-primary);color:var(--color-text-secondary)}
+</style>
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.5rem;display:flex;justify-content:center;">
+  <div style="width:272px;background:var(--color-background-primary);border-radius:28px;border:0.5px solid var(--color-border-secondary);overflow:hidden;">
+    <div style="position:relative;height:296px;background:linear-gradient(160deg,#163A1E,#0C2A14);overflow:hidden;" id="efStage">
+      <div class="ef-corner" style="top:14px;left:14px;border-right:none;border-bottom:none;border-radius:5px 0 0 0;"></div>
+      <div class="ef-corner" style="top:14px;right:14px;border-left:none;border-bottom:none;border-radius:0 5px 0 0;"></div>
+      <div class="ef-corner" style="bottom:14px;left:14px;border-right:none;border-top:none;border-radius:0 0 0 5px;"></div>
+      <div class="ef-corner" style="bottom:14px;right:14px;border-left:none;border-top:none;border-radius:0 0 5px 0;"></div>
+      <div id="efHint" style="position:absolute;top:22px;width:100%;text-align:center;color:rgba(255,255,255,.8);font-size:12px;">なにか いる…?</div>
+      <div id="efGlow" style="position:absolute;left:50%;top:46%;width:200px;height:200px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,247,214,.9),rgba(255,247,214,0) 65%);opacity:0;z-index:1;"></div>
+      <div id="efRays" style="position:absolute;left:50%;top:46%;width:230px;height:230px;transform:translate(-50%,-50%) scale(.3);border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,238,170,.85) 0deg 5deg,transparent 5deg 17deg);-webkit-mask:radial-gradient(circle,transparent 14%,#000 18%,#000 60%,transparent 70%);mask:radial-gradient(circle,transparent 14%,#000 18%,#000 60%,transparent 70%);opacity:0;z-index:2;"></div>
+      <div id="efRing" style="position:absolute;left:50%;top:46%;width:70px;height:70px;transform:translate(-50%,-50%) scale(.2);border:3px solid rgba(255,236,160,.9);border-radius:50%;opacity:0;z-index:3;"></div>
+      <div id="efLeafL" style="position:absolute;left:50%;top:46%;transform-origin:bottom center;opacity:0;z-index:3;"><svg width="34" height="46" viewBox="0 0 34 46" aria-hidden="true"><path d="M30 46 Q2 34 6 4 Q30 14 30 46Z" fill="#5FA02A"/><path d="M27 42 Q12 30 11 10" stroke="#3B6D11" stroke-width="1.4" fill="none"/></svg></div>
+      <div id="efLeafR" style="position:absolute;left:50%;top:46%;transform-origin:bottom center;opacity:0;z-index:3;"><svg width="34" height="46" viewBox="0 0 34 46" aria-hidden="true"><path d="M4 46 Q32 34 28 4 Q4 14 4 46Z" fill="#6FAE34"/><path d="M7 42 Q22 30 23 10" stroke="#3B6D11" stroke-width="1.4" fill="none"/></svg></div>
+      <div id="efSparks" style="position:absolute;inset:0;z-index:6;pointer-events:none;"></div>
+      <div id="efPlant" style="position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:4;text-align:center;cursor:pointer;">
+        <div style="width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,.08);border:1px dashed rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;"><i id="efPlantIc" class="ti ti-clover" style="font-size:50px;color:#C0DD97;"></i></div>
+      </div>
+      <div id="efChar" style="position:absolute;left:50%;top:46%;transform:translate(-50%,-50%) scale(.2);opacity:0;z-index:5;"></div>
+    </div>
+    <div style="padding:14px;">
+      <div id="efPlate" style="opacity:0;text-align:center;margin-bottom:12px;">
+        <p id="efName" style="margin:0;font-size:17px;font-weight:500;color:var(--color-text-primary);">—</p>
+        <p id="efReal" style="margin:5px 0 0;font-size:12px;color:var(--color-text-tertiary);">—</p>
+      </div>
+      <button id="efFind" class="ef-btn" style="width:100%;background:#1D9E75;color:#fff;"><i class="ti ti-sparkles" style="vertical-align:-2px;"></i> かざして みつける!</button>
+      <div id="efControls" style="display:none;flex-direction:column;gap:9px;">
+        <div style="display:flex;gap:8px;">
+          <button id="efAgain" class="ef-btn" style="flex:1;background:#1D9E75;color:#fff;"><i class="ti ti-refresh" style="vertical-align:-2px;"></i> もういちど</button>
+          <button id="efNext" class="ef-btn" style="flex:1;background:#7F77DD;color:#fff;"><i class="ti ti-arrows-shuffle" style="vertical-align:-2px;"></i> べつの子で</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+          <span style="font-size:12px;color:var(--color-text-tertiary);">テンポ:</span>
+          <button id="efSpeed" class="ef-pill">ふつう</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var bodies=[{b:"#1D9E75",d:"#085041"},{b:"#EF9F27",d:"#633806"},{b:"#D85A30",d:"#712B13"},{b:"#3FA9C9",d:"#10495B"},{b:"#7F77DD",d:"#2E2A66"},{b:"#C24D77",d:"#5C1E37"}];
+  var hatTypes=["none","clover","petals","leaf","fluff","berry"],eyesTypes=["dot","round","sleepy","sparkle"],mouthTypes=["smile","o","line","tooth"];
+  function hat(t){
+    if(t==="clover")return '<rect x="49" y="20" width="2" height="12" fill="#0F6E56"/><circle cx="50" cy="17" r="8" fill="#0F6E56"/><circle cx="43" cy="22" r="8" fill="#0F6E56"/><circle cx="57" cy="22" r="8" fill="#0F6E56"/>';
+    if(t==="petals"){var s="";for(var i=0;i<6;i++){var a=i*Math.PI/3;s+='<ellipse cx="'+(50+Math.cos(a)*11)+'" cy="'+(20+Math.sin(a)*8)+'" rx="6" ry="4" fill="#EFA9C0"/>';}return s+'<circle cx="50" cy="20" r="5" fill="#F4C14E"/>';}
+    if(t==="leaf")return '<path d="M50 2 Q66 16 50 32 Q34 16 50 2Z" fill="#5FA02A"/><line x1="50" y1="5" x2="50" y2="30" stroke="#3B6D11" stroke-width="1.5"/>';
+    if(t==="fluff")return '<circle cx="50" cy="16" r="12" fill="#EAF3DE"/><circle cx="40" cy="20" r="7" fill="#EAF3DE"/><circle cx="60" cy="20" r="7" fill="#EAF3DE"/><circle cx="50" cy="16" r="3" fill="#C9D9B0"/>';
+    if(t==="berry")return '<circle cx="45" cy="22" r="6" fill="#C0392B"/><circle cx="57" cy="22" r="6" fill="#C0392B"/><circle cx="51" cy="15" r="6" fill="#C0392B"/><circle cx="43" cy="20" r="1.6" fill="#fff" opacity=".6"/>';
+    return "";
+  }
+  function eyes(t,d){
+    if(t==="dot")return '<circle cx="41" cy="58" r="3" fill="'+d+'"/><circle cx="59" cy="58" r="3" fill="'+d+'"/>';
+    if(t==="sleepy")return '<path d="M37 58 Q41 61 45 58" stroke="'+d+'" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M55 58 Q59 61 63 58" stroke="'+d+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+    if(t==="sparkle")return '<circle cx="41" cy="58" r="5.5" fill="#fff"/><circle cx="59" cy="58" r="5.5" fill="#fff"/><circle cx="42" cy="59" r="2.6" fill="#2C2C2A"/><circle cx="60" cy="59" r="2.6" fill="#2C2C2A"/><circle cx="40" cy="56" r="1.6" fill="#fff"/><circle cx="58" cy="56" r="1.6" fill="#fff"/>';
+    return '<circle cx="41" cy="58" r="5" fill="#fff"/><circle cx="59" cy="58" r="5" fill="#fff"/><circle cx="42" cy="59" r="2.6" fill="#2C2C2A"/><circle cx="60" cy="59" r="2.6" fill="#2C2C2A"/>';
+  }
+  function mouth(t,d){
+    if(t==="o")return '<ellipse cx="50" cy="74" rx="3" ry="4" fill="'+d+'"/>';
+    if(t==="line")return '<line x1="45" y1="73" x2="55" y2="73" stroke="'+d+'" stroke-width="2.4" stroke-linecap="round"/>';
+    if(t==="tooth")return '<path d="M44 72 Q50 78 56 72" stroke="'+d+'" stroke-width="2.4" fill="none" stroke-linecap="round"/><rect x="48.5" y="72.5" width="3.5" height="3.5" rx="1" fill="#fff"/>';
+    return '<path d="M44 72 Q50 78 56 72" stroke="'+d+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+  }
+  function svg(st,size){var bc=bodies[st.body];return '<svg viewBox="0 0 100 100" width="'+size+'" height="'+size+'" aria-hidden="true">'+hat(hatTypes[st.hat])+'<ellipse cx="50" cy="62" rx="28" ry="30" fill="'+bc.b+'"/><circle cx="33" cy="70" r="4" fill="#fff" opacity=".3"/><circle cx="67" cy="70" r="4" fill="#fff" opacity=".3"/>'+eyes(eyesTypes[st.eyes],bc.d)+mouth(mouthTypes[st.mouth],bc.d)+'</svg>';}
+
+  var dummies=[
+    {body:0,hat:1,eyes:1,mouth:0,name:"ヨツバの子(仮)",pic:"ti-clover",jp:"シロツメクサ",la:"Trifolium repens"},
+    {body:1,hat:4,eyes:2,mouth:1,name:"わたげ じいさん(仮)",pic:"ti-flower",jp:"タンポポ",la:"Taraxacum"},
+    {body:2,hat:5,eyes:0,mouth:3,name:"きいちご こぞう(仮)",pic:"ti-cherry",jp:"クサイチゴ",la:"Rubus hirsutus"},
+    {body:4,hat:2,eyes:3,mouth:0,name:"はなかんむり(仮)",pic:"ti-flower-2",jp:"ハルジオン",la:"Erigeron philadelphicus"}
+  ];
+  var idx=0, fast=false;
+  var $=function(i){return document.getElementById(i);};
+  var stage=$("efStage"),hint=$("efHint"),glow=$("efGlow"),rays=$("efRays"),ring=$("efRing"),leafL=$("efLeafL"),leafR=$("efLeafR"),sparks=$("efSparks"),plant=$("efPlant"),plantIc=$("efPlantIc"),charEl=$("efChar"),plate=$("efPlate");
+
+  function setMeta(){var d=dummies[idx];plantIc.className="ti "+d.pic;charEl.innerHTML=svg(d,128);$("efName").textContent=d.name;$("efReal").innerHTML='<i class="ti ti-leaf" style="vertical-align:-2px;color:#639922;"></i> みつけた: '+d.jp+' <span style="font-style:italic;opacity:.8;">'+d.la+'</span>';}
+
+  function cancelAll(){[glow,rays,ring,leafL,leafR,plant,charEl,plate].forEach(function(el){el.getAnimations().forEach(function(a){a.cancel();});});}
+
+  function spawnSparks(b){
+    sparks.innerHTML="";var cols=["#FFE9A6","#FFFFFF","#9FE1CB","#FAC775"];
+    for(var i=0;i<12;i++){var s=document.createElement("div");s.className="ef-spark";s.style.background=cols[i%cols.length];sparks.appendChild(s);
+      var ang=Math.random()*Math.PI*2,dist=46+Math.random()*60;
+      s.animate([{opacity:1,transform:"translate(-50%,-50%) scale(1) rotate(0deg)"},{opacity:1,offset:.55},{opacity:0,transform:"translate(calc(-50% + "+Math.cos(ang)*dist+"px),calc(-50% + "+Math.sin(ang)*dist+"px)) scale(.25) rotate(140deg)"}],{duration:(540+Math.random()*240)*b,easing:"cubic-bezier(.2,.7,.3,1)",fill:"forwards"});
+    }
+  }
+
+  function play(){
+    var b=fast?0.6:1;
+    cancelAll();
+    plate.style.opacity=0;hint.style.opacity=1;
+    plant.style.opacity=1;plant.style.transform="translate(-50%,-50%) scale(1)";
+    charEl.style.opacity=0;charEl.style.transform="translate(-50%,-50%) scale(.2)";
+    hint.animate([{opacity:1},{opacity:0}],{duration:240*b,fill:"forwards"});
+    plant.animate([{transform:"translate(-50%,-50%) scale(1)"},{transform:"translate(-50%,-50%) scale(.84) rotate(-3deg)"},{transform:"translate(-50%,-50%) scale(.9)"}],{duration:250*b,easing:"ease-in-out",fill:"forwards"});
+    glow.animate([{opacity:0,transform:"translate(-50%,-50%) scale(.6)"},{opacity:0,offset:.4},{opacity:.6,transform:"translate(-50%,-50%) scale(1)"}],{duration:300*b,fill:"forwards"});
+    setTimeout(function(){
+      plant.animate([{opacity:1,transform:"translate(-50%,-50%) scale(.9)"},{opacity:0,transform:"translate(-50%,-50%) scale(.4)"}],{duration:260*b,fill:"forwards"});
+      rays.animate([{opacity:0,transform:"translate(-50%,-50%) scale(.3) rotate(0)"},{opacity:.95,offset:.3},{opacity:0,transform:"translate(-50%,-50%) scale(1.5) rotate(22deg)"}],{duration:520*b,easing:"ease-out"});
+      ring.animate([{opacity:.85,transform:"translate(-50%,-50%) scale(.2)"},{opacity:0,transform:"translate(-50%,-50%) scale(2.5)"}],{duration:560*b,easing:"ease-out"});
+      leafL.animate([{opacity:.95,transform:"translate(-50%,-30%) rotate(0)"},{opacity:0,transform:"translate(-50%,-30%) rotate(-78deg)"}],{duration:480*b,easing:"ease-out"});
+      leafR.animate([{opacity:.95,transform:"translate(-50%,-30%) rotate(0)"},{opacity:0,transform:"translate(-50%,-30%) rotate(78deg)"}],{duration:480*b,easing:"ease-out"});
+      spawnSparks(b);
+    },250*b);
+    setTimeout(function(){
+      charEl.style.opacity=1;
+      charEl.animate([{opacity:0,transform:"translate(-50%,-50%) scale(.2) translateY(12px)"},{opacity:1,transform:"translate(-50%,-50%) scale(1.18) translateY(-6px)",offset:.55},{transform:"translate(-50%,-50%) scale(.95) translateY(2px)",offset:.8},{transform:"translate(-50%,-50%) scale(1)"}],{duration:520*b,easing:"cubic-bezier(.34,1.56,.64,1)",fill:"forwards"});
+      glow.animate([{opacity:.6},{opacity:.28}],{duration:420*b,fill:"forwards"});
+    },360*b);
+    setTimeout(function(){
+      plate.animate([{opacity:0,transform:"translateY(8px)"},{opacity:1,transform:"translateY(0)"}],{duration:300*b,fill:"forwards"});
+      charEl.animate([{transform:"translate(-50%,-50%) translateY(0) scale(1)"},{transform:"translate(-50%,-50%) translateY(-4px) scale(1)"},{transform:"translate(-50%,-50%) translateY(0) scale(1)"}],{duration:2400,iterations:Infinity,easing:"ease-in-out"});
+    },820*b);
+    $("efFind").style.display="none";$("efControls").style.display="flex";
+  }
+
+  setMeta();
+  $("efFind").onclick=play;
+  plant.onclick=function(){ if($("efControls").style.display==="none") play(); };
+  $("efAgain").onclick=play;
+  $("efNext").onclick=function(){idx=(idx+1)%dummies.length;setMeta();play();};
+  $("efSpeed").onclick=function(){fast=!fast;$("efSpeed").textContent=fast?"はやめ":"ふつう";};
+})();
+</script>

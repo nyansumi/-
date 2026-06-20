@@ -1,0 +1,105 @@
+<h2 class="sr-only">「じぶんでコビトをつくる」画面。からだの色・かみ(花や葉のパーツ)・目・口を選んでオリジナルのコビトをデザインし、名前と「くせ」をつけてずかんに登録できる、操作可能なプロトタイプです。</h2>
+<style>
+@keyframes kpop{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes kbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.kc-opt{cursor:pointer;border-radius:10px;background:var(--color-background-secondary);border:2px solid transparent;display:flex;align-items:center;justify-content:center;transition:transform .12s}
+.kc-opt:active{transform:scale(.9)}
+.kc-opt.sel{border-color:#7F77DD;background:#EEEDFE}
+.kc-tab{flex:1;border:none;background:transparent;padding:8px 0;font-size:12px;color:var(--color-text-tertiary);cursor:pointer;border-bottom:2px solid transparent}
+.kc-tab.on{color:#5A4FCF;border-bottom-color:#7F77DD;font-weight:500}
+.kc-btn{border:none;border-radius:var(--border-radius-md);padding:11px;font-size:14px;font-weight:500;cursor:pointer;width:100%}
+</style>
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.5rem;display:flex;justify-content:center;">
+  <div style="width:264px;background:var(--color-background-primary);border-radius:28px;border:0.5px solid var(--color-border-secondary);overflow:hidden;">
+    <div id="kcRoot" style="display:flex;flex-direction:column;min-height:540px;"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var bodies=[{b:"#1D9E75",d:"#085041"},{b:"#EF9F27",d:"#633806"},{b:"#D85A30",d:"#712B13"},{b:"#3FA9C9",d:"#10495B"},{b:"#7F77DD",d:"#2E2A66"},{b:"#C24D77",d:"#5C1E37"}];
+  var hatTypes=["none","clover","petals","leaf","fluff","berry"];
+  var eyesTypes=["dot","round","sleepy","sparkle"];
+  var mouthTypes=["smile","o","line","tooth"];
+  var kuseList=["あまやどりが すき","くつしたを かたほうだけ はく","あさ いちばんに あくびする","ちいさい いしを あつめる","さかさまに ねむる","はっぱの うえで すべる","かぜの ひに うたう","ポケットに たねを いれてる"];
+  var cats=[{k:"body",l:"からだ"},{k:"hat",l:"かみ"},{k:"eyes",l:"め"},{k:"mouth",l:"くち"}];
+  var listFor={body:bodies.map(function(_,i){return i}),hat:hatTypes,eyes:eyesTypes,mouth:mouthTypes};
+  var state={body:0,hat:2,eyes:1,mouth:0,name:"",kuse:kuseList[0]};
+  var active="hat";
+  var R=document.getElementById("kcRoot");
+
+  function hat(t){
+    if(t==="clover")return '<rect x="49" y="20" width="2" height="12" fill="#0F6E56"/><circle cx="50" cy="17" r="8" fill="#0F6E56"/><circle cx="43" cy="22" r="8" fill="#0F6E56"/><circle cx="57" cy="22" r="8" fill="#0F6E56"/>';
+    if(t==="petals"){var s="";for(var i=0;i<6;i++){var a=i*Math.PI/3;s+='<ellipse cx="'+(50+Math.cos(a)*11)+'" cy="'+(20+Math.sin(a)*8)+'" rx="6" ry="4" fill="#EFA9C0"/>';}return s+'<circle cx="50" cy="20" r="5" fill="#F4C14E"/>';}
+    if(t==="leaf")return '<path d="M50 2 Q66 16 50 32 Q34 16 50 2Z" fill="#5FA02A"/><line x1="50" y1="5" x2="50" y2="30" stroke="#3B6D11" stroke-width="1.5"/>';
+    if(t==="fluff")return '<circle cx="50" cy="16" r="12" fill="#EAF3DE"/><circle cx="40" cy="20" r="7" fill="#EAF3DE"/><circle cx="60" cy="20" r="7" fill="#EAF3DE"/><circle cx="50" cy="16" r="3" fill="#C9D9B0"/>';
+    if(t==="berry")return '<circle cx="45" cy="22" r="6" fill="#C0392B"/><circle cx="57" cy="22" r="6" fill="#C0392B"/><circle cx="51" cy="15" r="6" fill="#C0392B"/><circle cx="43" cy="20" r="1.6" fill="#fff" opacity=".6"/>';
+    return "";
+  }
+  function eyes(t,d){
+    if(t==="dot")return '<circle cx="41" cy="58" r="3" fill="'+d+'"/><circle cx="59" cy="58" r="3" fill="'+d+'"/>';
+    if(t==="round")return '<circle cx="41" cy="58" r="5" fill="#fff"/><circle cx="59" cy="58" r="5" fill="#fff"/><circle cx="42" cy="59" r="2.6" fill="#2C2C2A"/><circle cx="60" cy="59" r="2.6" fill="#2C2C2A"/>';
+    if(t==="sleepy")return '<path d="M37 58 Q41 61 45 58" stroke="'+d+'" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M55 58 Q59 61 63 58" stroke="'+d+'" stroke-width="2.2" fill="none" stroke-linecap="round"/>';
+    return '<circle cx="41" cy="58" r="5.5" fill="#fff"/><circle cx="59" cy="58" r="5.5" fill="#fff"/><circle cx="42" cy="59" r="2.6" fill="#2C2C2A"/><circle cx="60" cy="59" r="2.6" fill="#2C2C2A"/><circle cx="40" cy="56" r="1.6" fill="#fff"/><circle cx="58" cy="56" r="1.6" fill="#fff"/>';
+  }
+  function mouth(t,d){
+    if(t==="o")return '<ellipse cx="50" cy="74" rx="3" ry="4" fill="'+d+'"/>';
+    if(t==="line")return '<line x1="45" y1="73" x2="55" y2="73" stroke="'+d+'" stroke-width="2.4" stroke-linecap="round"/>';
+    if(t==="tooth")return '<path d="M44 72 Q50 78 56 72" stroke="'+d+'" stroke-width="2.4" fill="none" stroke-linecap="round"/><rect x="48.5" y="72.5" width="3.5" height="3.5" rx="1" fill="#fff"/>';
+    return '<path d="M44 72 Q50 78 56 72" stroke="'+d+'" stroke-width="2.4" fill="none" stroke-linecap="round"/>';
+  }
+  function svg(st,size){
+    var bc=bodies[st.body];
+    return '<svg viewBox="0 0 100 100" width="'+size+'" height="'+size+'" aria-hidden="true">'+hat(hatTypes[st.hat])+
+      '<ellipse cx="50" cy="62" rx="28" ry="30" fill="'+bc.b+'"/>'+
+      '<circle cx="33" cy="70" r="4" fill="#fff" opacity=".3"/><circle cx="67" cy="70" r="4" fill="#fff" opacity=".3"/>'+
+      eyes(eyesTypes[st.eyes],bc.d)+mouth(mouthTypes[st.mouth],bc.d)+'</svg>';
+  }
+  function clone(o){return {body:o.body,hat:o.hat,eyes:o.eyes,mouth:o.mouth,name:o.name,kuse:o.kuse};}
+
+  function builder(){
+    var opts=listFor[active].map(function(v,idx){
+      var val=(active==="body")?idx:v;
+      var tmp=clone(state); tmp[active]=val;
+      var selected = state[active]===val;
+      return '<div class="kc-opt '+(selected?"sel":"")+'" data-v="'+val+'" style="aspect-ratio:1;">'+svg(tmp,46)+'</div>';
+    }).join("");
+    R.innerHTML=
+    '<div style="background:#7F77DD;padding:12px 14px;color:#fff;font-size:13px;font-weight:500;"><i class="ti ti-wand" style="vertical-align:-2px;"></i> じぶんで つくる</div>'+
+    '<div style="background:#EEEDFE;padding:14px;display:flex;flex-direction:column;align-items:center;">'+
+      '<div style="animation:kbob 2.4s ease-in-out infinite;">'+svg(state,128)+'</div>'+
+      '<span style="font-size:10px;color:#5A4FCF;background:#fff;padding:2px 9px;border-radius:20px;margin-top:4px;">ダミー・さしかえ用パーツ</span></div>'+
+    '<div style="display:flex;border-bottom:0.5px solid var(--color-border-tertiary);">'+
+      cats.map(function(c){return '<button class="kc-tab '+(active===c.k?"on":"")+'" data-cat="'+c.k+'">'+c.l+'</button>';}).join("")+'</div>'+
+    '<div style="padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">'+opts+'</div>'+
+    '<div style="padding:0 14px 12px;display:flex;flex-direction:column;gap:10px;">'+
+      '<input id="kcName" placeholder="なまえを つけてね" value="'+state.name.replace(/"/g,"&quot;")+'" style="border:1px solid var(--color-border-secondary);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;outline:none;color:var(--color-text-primary);background:var(--color-background-primary);"/>'+
+      '<div style="display:flex;gap:8px;align-items:center;">'+
+        '<div style="flex:1;background:#FAEEDA;border-radius:8px;padding:8px 10px;font-size:12px;color:#633806;"><span style="opacity:.6;">くせ:</span> '+state.kuse+'</div>'+
+        '<button id="kcShuf" style="border:none;background:#FAC775;border-radius:8px;width:38px;height:36px;cursor:pointer;color:#633806;"><i class="ti ti-dice-3" style="font-size:18px;vertical-align:-3px;"></i></button></div>'+
+      '<button id="kcSave" class="kc-btn" style="background:#7F77DD;color:#fff;margin-top:2px;"><i class="ti ti-book" style="vertical-align:-2px;"></i> ずかんに とうろく!</button></div>';
+
+    R.querySelectorAll(".kc-opt").forEach(function(el){el.onclick=function(){var v=el.getAttribute("data-v");state[active]=isNaN(+v)?v:+v;saveName();builder();};});
+    R.querySelectorAll(".kc-tab").forEach(function(el){el.onclick=function(){saveName();active=el.getAttribute("data-cat");builder();};});
+    document.getElementById("kcShuf").onclick=function(){saveName();var n;do{n=kuseList[Math.floor(Math.random()*kuseList.length)];}while(n===state.kuse);state.kuse=n;builder();};
+    document.getElementById("kcSave").onclick=function(){saveName();done();};
+    document.getElementById("kcName").oninput=function(e){state.name=e.target.value;};
+  }
+  function saveName(){var n=document.getElementById("kcName");if(n)state.name=n.value;}
+
+  function done(){
+    var nm=state.name.trim()||"なまえなし";
+    R.innerHTML=
+    '<div style="background:#1D9E75;padding:12px 14px;color:#fff;font-size:13px;font-weight:500;"><i class="ti ti-confetti" style="vertical-align:-2px;"></i> できた!</div>'+
+    '<div style="flex:1;background:#EEEDFE;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;">'+
+      '<div style="animation:kpop .5s ease both;">'+svg(state,150)+'</div>'+
+      '<p style="font-size:18px;font-weight:500;margin:0;color:#2E2A66;">'+nm+'</p>'+
+      '<div style="background:#FAEEDA;border-radius:10px;padding:9px 14px;font-size:12px;color:#633806;text-align:center;"><i class="ti ti-sparkles" style="vertical-align:-2px;"></i> くせ:'+state.kuse+'</div>'+
+      '<p style="font-size:11px;color:#5A4FCF;margin:0;">マイずかんに なかまが ふえたよ</p></div>'+
+    '<div style="padding:14px;display:flex;flex-direction:column;gap:10px;border-top:0.5px solid var(--color-border-tertiary);">'+
+      '<button id="kcAgain" class="kc-btn" style="background:#7F77DD;color:#fff;">べつのを つくる</button></div>';
+    document.getElementById("kcAgain").onclick=function(){state={body:Math.floor(Math.random()*bodies.length),hat:2,eyes:1,mouth:0,name:"",kuse:kuseList[0]};active="hat";builder();};
+  }
+
+  builder();
+})();
+</script>
