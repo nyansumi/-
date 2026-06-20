@@ -12,4 +12,6 @@
 - iPhone想定、まずはウェブで試作
 
 ## ファイル一覧
+- 01-discovery-effect.html … 発見エフェクト（光がはじけてコビトが出る）
 - 02-zukan-detail.html … 図鑑の詳細ページ（コビト1体の詳細）
+- 03-zukan-maker.html … つくる画面（パーツでオリジナルのコビトを組む）
