@@ -15,3 +15,4 @@
 - 01-discovery-effect.html … 発見エフェクト（光がはじけてコビトが出る）
 - 02-zukan-detail.html … 図鑑の詳細ページ（コビト1体の詳細）
 - 03-zukan-maker.html … つくる画面（パーツでオリジナルのコビトを組む）
+- 04-michi-map.html … わたしたちのみち（道の記憶マップ＋いきもの検索でピンが光る）
