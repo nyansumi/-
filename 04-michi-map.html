@@ -1,0 +1,100 @@
+<h2 class="sr-only">生きものの名前で検索すると、その生きものを見つけた場所のピンが地図上で光り、ほかが薄くなるインタラクションのデモ。</h2>
+<style>
+.pin{transition:opacity .25s ease;}
+.pin.dim{opacity:.28;}
+.pin .halo{opacity:0;transition:opacity .25s ease;}
+.pin.on .halo{opacity:1;}
+.chip{font-size:12.5px;border:0.5px solid #DDD7C8;background:#FFFDF9;color:#5F5E5A;padding:7px 13px;border-radius:999px;cursor:pointer;}
+.chip.sel{background:#FAEEDA;border-color:#BA7517;color:#633806;}
+</style>
+
+<div style="background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 14px;">
+  <div style="background:#2C2C2A; border-radius:26px; padding:9px;">
+    <div style="background:#FAF7F0; border-radius:18px; overflow:hidden; font-family:var(--font-sans); color:#2C2C2A;">
+
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 14px 8px;">
+        <i class="ti ti-chevron-left" style="font-size:21px; color:#888780;" aria-label="もどる"></i>
+        <span style="font-size:14px; font-weight:500; color:#5F5E5A;">わたしたちの みち</span>
+        <i class="ti ti-share" style="font-size:19px; color:#888780;" aria-label="共有"></i>
+      </div>
+
+      <div style="margin:0 14px 9px; display:flex; align-items:center; gap:8px; background:#F1EFE8; border-radius:12px; padding:9px 12px;">
+        <i class="ti ti-search" style="font-size:17px; color:#888780;" aria-hidden="true"></i>
+        <span id="q" style="font-size:13px; color:#A8A69D;">いきもの・ばしょ で さがす</span>
+      </div>
+
+      <div style="display:flex; gap:8px; padding:0 14px 4px; flex-wrap:wrap;">
+        <button class="chip" onclick="pick('シロツメクサ',this)">シロツメクサ</button>
+        <button class="chip" onclick="pick('タンポポ',this)">タンポポ</button>
+        <button class="chip" onclick="pick('ダンゴムシ',this)">ダンゴムシ</button>
+        <button class="chip" onclick="pick('ナナホシテントウ',this)">ナナホシテントウ</button>
+      </div>
+
+      <div style="padding:6px 12px 0;">
+        <svg viewBox="0 0 340 200" width="100%" role="img" aria-label="道の地図と4つの場所のピン">
+          <rect x="0" y="0" width="340" height="200" rx="12" fill="#F4F1E8"/>
+          <path d="M5,118 Q48,96 116,106 Q154,138 120,182 Q70,210 28,188 Q4,158 5,118 Z" fill="#EAF3DE"/>
+          <path d="M196,8 Q288,2 332,34 Q346,76 300,100 Q236,112 210,78 Q190,42 196,8 Z" fill="#EAF3DE"/>
+          <ellipse cx="290" cy="56" rx="24" ry="16" fill="#E6F1FB" stroke="#B5D4F4" stroke-width="1.5"/>
+          <path d="M30,178 Q66,162 80,150 Q120,138 150,128 Q190,112 215,95 Q250,72 275,55 Q293,46 302,40" fill="none" stroke="#E4E0D4" stroke-width="11" stroke-linecap="round"/>
+          <circle cx="30" cy="178" r="6" fill="#888780"/><circle cx="30" cy="178" r="2.4" fill="#FAF7F0"/>
+          <text x="30" y="194" text-anchor="middle" font-size="11" fill="#888780" font-family="sans-serif">ほいくえん</text>
+          <circle cx="302" cy="38" r="6" fill="#888780"/><circle cx="302" cy="38" r="2.4" fill="#FAF7F0"/>
+          <text x="300" y="26" text-anchor="middle" font-size="11" fill="#888780" font-family="sans-serif">いえ</text>
+
+          <g id="pin-clover" class="pin">
+            <circle class="halo" cx="80" cy="150" r="20" fill="none" stroke="#FAC775" stroke-width="4"/>
+            <circle cx="80" cy="150" r="13" fill="#FAEEDA" stroke="#BA7517" stroke-width="2"/>
+            <text x="80" y="133" text-anchor="middle" font-size="11" fill="#5F5E5A" font-family="sans-serif">クローバー</text>
+          </g>
+          <g id="pin-dango" class="pin">
+            <circle class="halo" cx="150" cy="128" r="20" fill="none" stroke="#FAC775" stroke-width="4"/>
+            <circle cx="150" cy="128" r="13" fill="#FAEEDA" stroke="#BA7517" stroke-width="2"/>
+            <text x="150" y="111" text-anchor="middle" font-size="11" fill="#5F5E5A" font-family="sans-serif">だんごむし</text>
+          </g>
+          <g id="pin-tanpopo" class="pin">
+            <circle class="halo" cx="215" cy="95" r="20" fill="none" stroke="#FAC775" stroke-width="4"/>
+            <circle cx="215" cy="95" r="13" fill="#FAEEDA" stroke="#BA7517" stroke-width="2"/>
+            <text x="215" y="78" text-anchor="middle" font-size="11" fill="#5F5E5A" font-family="sans-serif">たんぽぽ</text>
+          </g>
+          <g id="pin-tentou" class="pin">
+            <circle class="halo" cx="275" cy="55" r="18" fill="none" stroke="#FAC775" stroke-width="4"/>
+            <circle cx="275" cy="55" r="12" fill="#FAEEDA" stroke="#BA7517" stroke-width="2"/>
+            <text x="275" y="76" text-anchor="middle" font-size="11" fill="#5F5E5A" font-family="sans-serif">てんとう</text>
+          </g>
+        </svg>
+      </div>
+
+      <div id="result" style="margin:6px 14px 14px; background:#F1EFE8; border-radius:10px; padding:10px 12px; font-size:12px; color:#5F5E5A; text-align:center; min-height:18px;">
+        いきものを えらぶと、いた ばしょが ひかる
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var data={
+    'シロツメクサ':[['clover','クローバーのひろば',4]],
+    'タンポポ':[['tanpopo','たんぽぽのかど',5]],
+    'ダンゴムシ':[['dango','だんごむしのかべ',8]],
+    'ナナホシテントウ':[['tentou','てんとうのき',3],['tanpopo','たんぽぽのかど',1]]
+  };
+  var ids=['clover','dango','tanpopo','tentou'];
+  window.pick=function(name,el){
+    document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('sel');});
+    if(el)el.classList.add('sel');
+    document.getElementById('q').textContent=name;
+    document.getElementById('q').style.color='#2C2C2A';
+    var spots=data[name];var hit=spots.map(function(s){return s[0];});
+    ids.forEach(function(id){
+      var g=document.getElementById('pin-'+id);
+      if(hit.indexOf(id)>=0){g.classList.add('on');g.classList.remove('dim');}
+      else{g.classList.add('dim');g.classList.remove('on');}
+    });
+    var txt=spots.map(function(s){return s[1]+' '+s[2]+'かい';}).join('　・　');
+    document.getElementById('result').textContent=name+' … '+txt;
+  };
+})();
+</script>
