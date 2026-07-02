@@ -60,10 +60,10 @@
   </div>
 
   <div class="chips">
-    <button class="chip" onclick="pick('シロツメクサ',this)">シロツメクサ</button>
-    <button class="chip" onclick="pick('タンポポ',this)">タンポポ</button>
-    <button class="chip" onclick="pick('ダンゴムシ',this)">ダンゴムシ</button>
-    <button class="chip" onclick="pick('ナナホシテントウ',this)">ナナホシテントウ</button>
+    <button class="chip" aria-pressed="false" onclick="pick('シロツメクサ',this)">シロツメクサ</button>
+    <button class="chip" aria-pressed="false" onclick="pick('タンポポ',this)">タンポポ</button>
+    <button class="chip" aria-pressed="false" onclick="pick('ダンゴムシ',this)">ダンゴムシ</button>
+    <button class="chip" aria-pressed="false" onclick="pick('ナナホシテントウ',this)">ナナホシテントウ</button>
   </div>
 
   <div class="mapwrap">
@@ -117,8 +117,8 @@
   };
   var ids=['clover','dango','tanpopo','tentou'];
   window.pick=function(name,el){
-    document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('sel');});
-    if(el)el.classList.add('sel');
+    document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('sel');c.setAttribute('aria-pressed','false');});
+    if(el){el.classList.add('sel');el.setAttribute('aria-pressed','true');}
     var q=document.getElementById('q'); q.textContent=name; q.style.color='#2C2C2A';
     var spots=data[name]; var hit=spots.map(function(s){return s[0];});
     ids.forEach(function(id){

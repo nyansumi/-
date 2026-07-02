@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FAF7F0">
+<title>こもりむし ｜ かざして みつける</title>
+<style>
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:#EDEAE0; color:#2C2C2A; min-height:100dvh;
+    font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:18px;
+  }
+  /* iPhone frame */
+  .phone{ width:100%; max-width:392px; height:min(840px,94dvh); background:#FAF7F0;
+          border-radius:42px; box-shadow:0 18px 50px rgba(60,55,45,.28), inset 0 0 0 2px #fff;
+          display:flex; flex-direction:column; overflow:hidden; position:relative; }
+  .notch{ position:absolute; top:10px; left:50%; transform:translateX(-50%); width:118px; height:26px;
+          background:#1c1b18; border-radius:0 0 16px 16px; z-index:60; }
+
+  header{ display:flex; align-items:center; gap:10px; padding:30px 20px 8px; }
+  header .ttl{ font-size:19px; font-weight:700; color:#3A3A37; letter-spacing:.01em; }
+  header .live{ margin-left:auto; font-size:11px; color:#A8A69D; display:flex; align-items:center; gap:5px; }
+  header .live::before{ content:""; width:7px; height:7px; border-radius:50%; background:#7FA15B; }
+
+  /* STAGE */
+  .stage{ flex:1; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; margin:6px 16px 0; }
+  .frame{ position:absolute; inset:0; border-radius:26px;
+          background:radial-gradient(120% 90% at 50% 28%, #EFEFE6 0%, #E4E6DC 55%, #D7DBCB 100%);
+          border:1px solid #DDD7C8; }
+  .frame::after{ content:""; position:absolute; inset:16px; border-radius:18px; border:2px dashed #C7C2B0; opacity:.5; }
+  .hint{ position:relative; z-index:5; text-align:center; color:#8a887f; font-size:15px; line-height:1.8; padding:0 30px; }
+  .hint .big{ display:block; font-size:46px; margin-bottom:8px; }
+
+  .photo{ position:absolute; inset:0; border-radius:26px; object-fit:cover; width:100%; height:100%; opacity:0;
+          transition:opacity .3s ease; z-index:2; }
+  .photo.show{ opacity:1; }
+  .scrim{ position:absolute; inset:0; border-radius:26px; background:rgba(40,38,34,.32); opacity:0; transition:opacity .3s; z-index:3; }
+  .scrim.show{ opacity:1; }
+
+  .think{ position:relative; z-index:6; opacity:0; transition:opacity .25s; text-align:center; color:#fff; }
+  .think.show{ opacity:1; }
+  .think .dots{ display:inline-flex; gap:7px; margin-bottom:10px; }
+  .think .dots i{ width:10px; height:10px; border-radius:50%; background:#FAEEDA; display:block; animation:bounce 1s infinite; }
+  .think .dots i:nth-child(2){ animation-delay:.15s; } .think .dots i:nth-child(3){ animation-delay:.3s; }
+  @keyframes bounce{ 0%,100%{ transform:translateY(0); opacity:.5;} 50%{ transform:translateY(-8px); opacity:1;} }
+  .think .tx{ font-size:16px; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,.3); }
+
+  /* discovery effect (reused) */
+  .glow{ position:absolute; width:230px; height:230px; border-radius:50%; opacity:0; z-index:7;
+         background:radial-gradient(circle, rgba(250,199,117,.9) 0%, rgba(250,199,117,0) 70%); }
+  .ring{ position:absolute; width:46px; height:46px; border-radius:50%; border:4px solid #FAC775; opacity:0; z-index:7; }
+  .charwrap{ position:relative; z-index:9; width:210px; height:210px; display:flex; align-items:center; justify-content:center; opacity:0; transform:scale(.4); }
+  .charwrap svg{ width:188px; height:188px; filter:drop-shadow(0 8px 14px rgba(80,60,30,.22)); }
+  .flash{ position:absolute; width:140px; height:140px; border-radius:50%; opacity:0; z-index:8;
+          background:radial-gradient(circle,#fff 0%, rgba(255,255,255,0) 70%); }
+  .ring2{ position:absolute; width:46px; height:46px; border-radius:50%; border:4px solid #FAC775; opacity:0; z-index:7; }
+  .burst{ position:absolute; left:50%; top:50%; width:0; height:0; z-index:8; pointer-events:none; }
+  .burst .p{ position:absolute; left:0; top:0; border-radius:50%; opacity:0; }
+  .burst .spark{ position:absolute; left:0; top:0; line-height:1; color:#FAC775; opacity:0; }
+
+  .stage.pop .glow{ animation:glowpop 1.4s ease-out forwards; }
+  .stage.pop .flash{ animation:flashpop .5s ease-out forwards; }
+  .stage.pop .ring{ animation:ringpop 1.1s ease-out forwards; }
+  .stage.pop .ring2{ animation:ringpop 1.1s ease-out .22s forwards; }
+  .stage.pop .burst .p{ animation:fly var(--d,.9s) cubic-bezier(.15,.7,.3,1) forwards; }
+  .stage.pop .burst .spark{ animation:twinkle 1s ease-out forwards; }
+  /* base entrance (plants): gentle unfold */
+  .stage.pop .charwrap{ animation:charpop 1.2s cubic-bezier(.2,1.5,.4,1) .3s forwards; }
+  /* 地のむし: ポンと出てブブッと震える */
+  .stage.pop.crawl .charwrap{ animation:charpop 1.1s cubic-bezier(.2,1.6,.35,1) .3s forwards, buzz .55s ease-in-out 1.4s 1; }
+  /* 飛ぶむし: ポンと出てふわふわ浮く */
+  .stage.pop.fly .charwrap{ animation:charpop 1s cubic-bezier(.2,1.6,.35,1) .3s forwards, hover 2.6s ease-in-out 1.35s infinite; }
+
+  @keyframes glowpop{ 0%{opacity:0;transform:scale(.3);} 40%{opacity:1;} 100%{opacity:.5;transform:scale(1.1);} }
+  @keyframes flashpop{ 0%{opacity:0;transform:scale(.3);} 22%{opacity:.95;} 100%{opacity:0;transform:scale(1.7);} }
+  @keyframes ringpop{ 0%{opacity:.9;transform:scale(.3);} 100%{opacity:0;transform:scale(3.6);} }
+  @keyframes charpop{ 0%{opacity:0;transform:scale(.4) rotate(-8deg);} 60%{opacity:1;transform:scale(1.12) rotate(3deg);} 100%{opacity:1;transform:scale(1) rotate(0);} }
+  @keyframes fly{ 0%{transform:translate(-50%,-50%) scale(.3); opacity:0;} 12%{opacity:1;} 100%{transform:translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(var(--s,1)); opacity:0;} }
+  @keyframes twinkle{ 0%{opacity:0; transform:translate(calc(-50% + var(--sx)), calc(-50% + var(--sy))) scale(0) rotate(0);}
+                      45%{opacity:1; transform:translate(calc(-50% + var(--sx)), calc(-50% + var(--sy))) scale(1.2) rotate(45deg);}
+                      100%{opacity:0; transform:translate(calc(-50% + var(--sx)), calc(-50% + var(--sy))) scale(.5) rotate(90deg);} }
+  @keyframes buzz{ 0%,100%{transform:scale(1) rotate(0) translateX(0);} 20%{transform:scale(1.05) rotate(-7deg) translateX(-3px);}
+                   40%{transform:scale(1.04) rotate(6deg) translateX(3px);} 60%{transform:scale(1.03) rotate(-4deg) translateX(-2px);}
+                   80%{transform:scale(1.02) rotate(3deg) translateX(2px);} }
+  @keyframes hover{ 0%,100%{transform:translateY(0) rotate(-2.5deg);} 50%{transform:translateY(-9px) rotate(2.5deg);} }
+
+  @media (prefers-reduced-motion: reduce){
+    .burst{ display:none; }
+    .stage.pop .charwrap, .stage.pop.crawl .charwrap, .stage.pop.fly .charwrap{ animation:charpop .4s ease forwards; }
+    .stage.pop .ring2{ animation:none; }
+  }
+
+  .qbig{ position:relative; z-index:9; opacity:0; transition:opacity .4s; text-align:center; }
+  .qbig.show{ opacity:1; }
+  .qbig .qm{ width:110px; height:110px; border-radius:50%; background:rgba(255,255,255,.9); display:flex; align-items:center; justify-content:center; font-size:54px; color:#b3b1a8; margin:0 auto 6px; }
+
+  /* PLATE */
+  .plate{ min-height:96px; padding:14px 22px 6px; text-align:center; }
+  .kidword{ margin:0; font-size:25px; font-weight:800; color:#3A3A37; opacity:0; transform:translateY(6px); transition:.4s .2s; }
+  .kidword.show{ opacity:1; transform:none; }
+  .parent{ margin-top:8px; opacity:0; transition:.4s .45s; }
+  .parent.show{ opacity:1; }
+  .parent .wa{ font-size:16px; font-weight:600; color:#5F5E5A; }
+  .parent .ga{ font-size:13px; color:#9a9890; font-style:italic; margin-left:7px; }
+  .parent .note{ display:block; margin-top:7px; font-size:13px; line-height:1.6; color:#8a887f; }
+  .conf{ display:inline-block; margin-top:9px; font-size:11px; font-weight:700; padding:3px 11px; border-radius:999px; letter-spacing:.03em; }
+  .conf.high{ background:#E4F0DA; color:#4e7a37; } .conf.mid{ background:#FAEEDA; color:#8f590f; } .conf.low{ background:#F0E6E6; color:#a06b66; }
+
+  /* CONTROLS */
+  .controls{ padding:6px 18px 14px; }
+  .primary{ width:100%; padding:18px; border:none; border-radius:18px; background:#FAEEDA; color:#633806;
+            font-size:18px; font-weight:800; font-family:inherit; cursor:pointer; box-shadow:0 4px 0 #E7C58B; }
+  .primary:active{ transform:translateY(2px); box-shadow:0 2px 0 #E7C58B; }
+  .primary:disabled{ opacity:.55; box-shadow:0 4px 0 #E7C58B; }
+  .row{ display:flex; gap:10px; }
+  .gbtn{ flex:1; padding:16px; border-radius:16px; font-size:16px; font-weight:700; font-family:inherit; cursor:pointer; }
+  .gs{ background:#FFFDF9; border:1px solid #DDD7C8; color:#5F5E5A; }
+  .gp{ background:#BA7517; border:none; color:#fff; box-shadow:0 4px 0 #8f590f; } .gp:active{ transform:translateY(2px); box-shadow:0 2px 0 #8f590f; }
+  .hide{ display:none !important; }
+
+  /* ZUKAN strip */
+  .zukan{ border-top:1px solid #ECE8DC; padding:11px 18px 16px; }
+  .zukan .lab{ font-size:12px; color:#A8A69D; margin-bottom:8px; display:flex; align-items:center; gap:7px; }
+  .zukan .lab b{ color:#7a786f; font-weight:700; }
+  .strip{ display:flex; gap:9px; overflow-x:auto; min-height:58px; align-items:center; }
+  .strip .empty{ font-size:13px; color:#bdbbb2; }
+  .chip{ flex:0 0 auto; width:54px; height:54px; border-radius:14px; background:#F1EFE8; display:flex; align-items:center; justify-content:center; animation:chippop .5s cubic-bezier(.2,1.5,.4,1); }
+  .chip svg{ width:46px; height:46px; }
+  @keyframes chippop{ 0%{transform:scale(.2);opacity:0;} 100%{transform:scale(1);opacity:1;} }
+
+  .err{ position:absolute; left:0; right:0; bottom:0; z-index:9; text-align:center; color:#fff; font-size:14px; font-weight:600; padding:14px; text-shadow:0 1px 3px rgba(0,0,0,.4); }
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="notch"></div>
+
+    <!-- hidden SVG defs: the 8 confirmed kobito (guide-stripped) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<!-- 共通キット: め・くち（中心128系の6体で共用。tonbo/kumoは座標系が0.5ずれるため個別のまま） -->
+<g id="kit-kuchi"><path d="M129.34,115.75l-3.71-1.47c.23-.77,1.69-.52,2.37-.27.68.25,1.61.87,1.34,1.74h0Z" style="fill: #4c372c;" /></g>
+<g id="kit-me">
+  <g>
+    <path d="M147.43,108.49c3.45-3.05,3.89-7.84,1.62-11.63-1.18-1.98-2.55-4.4-4.45-3.86-4.05,1.12-3.35,14.41.57,16,.65.26,1.53.14,2.25-.5h0Z" style="fill: #3a231e;" />
+    <path d="M143.86,103.19c-.13-.46-.63-.15-.38.18.05.03.12.13.13.2.11,1.65.75,3.45,2.28,4.58,1.59-1.05,2.52-2.48,3.12-4.26-1.72,1.23-3.57.55-5.09-.58-.05-.02-.07-.08-.07-.12h.01Z" style="fill: #794f26;" />
+    <ellipse cx="145.69" cy="96.96" rx="1.79" ry="1.51" transform="translate(36.59 233.8) rotate(-85.08)" style="fill: #fff;" />
+  </g>
+  <g>
+    <path d="M108.57,108.49c-3.45-3.05-3.89-7.84-1.62-11.63,1.18-1.98,2.55-4.4,4.45-3.86,4.05,1.12,3.35,14.41-.57,16-.65.26-1.53.14-2.25-.5h0Z" style="fill: #3a231e;" />
+    <path d="M112.14,103.19c.13-.46.63-.15.38.18-.05.03-.12.13-.13.2-.11,1.65-.75,3.45-2.28,4.58-1.59-1.05-2.52-2.48-3.12-4.26,1.72,1.23,3.57.55,5.09-.58.05-.02.07-.08.07-.12h-.01Z" style="fill: #794f26;" />
+    <ellipse cx="110.33" cy="96.95" rx="1.51" ry="1.79" transform="translate(-7.91 9.82) rotate(-4.92)" style="fill: #fff;" />
+  </g>
+</g>
+
+<symbol id="k-leaf" viewBox="0 0 256 256"><g id="te">
+    <path d="M178.74,117.39s12.55-7.18,13.55-16.45,10.54-10.58,11.54-5.16-1.51,28.67-25.09,33.11v-11.5Z" style="fill: #f2dfae;" />
+    <path d="M77.26,117.39s-12.55-7.18-13.55-16.45-10.54-10.58-11.54-5.16,1.51,28.67,25.09,33.11v-11.5Z" style="fill: #f2dfae;" />
+  </g>
+  <g id="ashi">
+    <path d="M154.03,176.15s2.31,22.25,6.61,22.89,10.82,5.77-3.46,7.52c-14.28,1.76-10.95-28.62-10.95-28.62l7.79-1.79h.01Z" style="fill: #789245;" />
+    <path d="M101.97,176.15s-2.31,22.25-6.61,22.89-10.82,5.77,3.46,7.52c14.28,1.76,10.95-28.62,10.95-28.62l-7.79-1.79h0Z" style="fill: #789245;" />
+  </g>
+  <g id="karada">
+    <path d="M185.3,95.94c-6.7-24.31-30.93-36.17-57.3-36.17s-50.6,11.86-57.3,36.17c-6.14,22.27,2.82,60.4,19.37,76.51,12.82,12.48,37.93,14.49,37.93,14.49,0,0,25.11-2.01,37.93-14.49,16.55-16.11,25.51-54.24,19.37-76.51Z" style="fill: #789245;" />
+    <g id="karada1" data-name="karada">
+      <path d="M129.59,145.62s27.54-12.41,29.41-13.62,1.65-1.29,2-1c.77.64-21.47,12.8-31.23,16.4-.53-.8-.18-1.78-.18-1.78h0Z" style="fill: #2b6a30;" />
+      <path d="M128.84,164.75s27.54-12.41,29.41-13.62,1.65-1.29,2-1c.77.64-21.47,12.8-31.23,16.4-.53-.8-.18-1.78-.18-1.78h0Z" style="fill: #2b6a30;" />
+      <path d="M128,130.44c-4,3.43-1,49.56-1,49.9,0,.66,1,.66,1,.66,0,0,1,0,1-.66,0-.34,3-46.47-1-49.9Z" style="fill: #2b6a30;" />
+      <path d="M126.41,145.62s-27.54-12.41-29.41-13.62-1.65-1.29-2-1c-.77.64,21.47,12.8,31.23,16.4.53-.8.18-1.78.18-1.78Z" style="fill: #2b6a30;" />
+      <path d="M127.16,164.75s-27.54-12.41-29.41-13.62-1.65-1.29-2-1c-.77.64,21.47,12.8,31.23,16.4.53-.8.18-1.78.18-1.78Z" style="fill: #2b6a30;" />
+    </g>
+  </g>
+  <g id="atama">
+    <path d="M128,62.42s-8.3-13.55.25-25.09,10.45-18.57,10.45-18.57c0,0,9.14,16.06,5.13,29.11s-15.82,14.55-15.82,14.55" style="fill: #789245;" />
+    <path d="M129.39,60.74s-.18-7.7,3.06-16.12l3.34-8.7c.62-1.22.84-.91.48.7,0,0-.83,3.72-3.43,10.59-2.16,5.71-2.56,13.52-3.45,13.52h0Z" style="fill: #a4ae77;" />
+  </g>
+  <g id="kao">
+    <path d="M150.45,84.71c-13.83-6.15-20.75-6.06-22.45-5.91-1.7-.15-8.62-.24-22.45,5.91-9.7,4.3-19.11,19.69-10.55,35.8h.01c3.9,7.34,12.66,12.59,20.11,10.71,7.38-1.86,12.77-2.28,12.88-2.29.11,0,5.5.43,12.88,2.29,7.45,1.88,16.21-3.37,20.11-10.71h.01c8.56-16.11-.85-31.5-10.55-35.8Z" style="fill: #f2dfae;" />
+    <path d="M128,126.06c-17.64.34-33-5.55-33-5.55,3.9,7.34,12.66,12.59,20.11,10.71,7.45-1.88,12.89-2.29,12.89-2.29,0,0,5.44.41,12.89,2.29,7.45,1.88,16.21-3.37,20.11-10.71,0,0-15.36,5.89-33,5.55Z" style="fill: #cea284;" />
+  </g>
+  <use id="kuchi" href="#kit-kuchi" />
+  <use id="me" href="#kit-me" />
+</symbol>
+<symbol id="k-hana" viewBox="0 0 256 256"><g id="te">
+    <path d="M178.74,117.39s12.55-7.18,13.55-16.45,10.54-10.58,11.54-5.16-1.51,28.67-25.09,33.11v-11.5Z" style="fill: #72ae73;" />
+    <path d="M77.26,117.39s-12.55-7.18-13.55-16.45-10.54-10.58-11.54-5.16,1.51,28.67,25.09,33.11v-11.5Z" style="fill: #72ae73;" />
+  </g>
+  <g id="ashi">
+    <path d="M154.03,176.15s2.31,22.25,6.61,22.89,10.82,5.77-3.46,7.52c-14.28,1.76-10.95-28.62-10.95-28.62l7.79-1.79h.01Z" style="fill: #72ae73;" />
+    <path d="M101.97,176.15s-2.31,22.25-6.61,22.89-10.82,5.77,3.46,7.52c14.28,1.76,10.95-28.62,10.95-28.62l-7.79-1.79h0Z" style="fill: #72ae73;" />
+  </g>
+  <g id="karada"><path d="M170.46,122.59l-42.46,3.47-42.46-3.47s-8.28,38.34,9.46,53.56c16.17,13.88,28.89,11.5,33,12.2,4.11-.7,16.83,1.68,33-12.2,17.74-15.22,9.46-53.56,9.46-53.56Z" style="fill: #72ae73;" />
+  <g id="karada1" data-name="karada"><path d="M82.99,55.67c-9.97,3.49-16.16,18.12-5.38,31.74,10.79,13.63,33.18,7.4,33.18,7.4,0,0,13.26-19.09,3.94-33.77-9.32-14.67-25.17-13.64-31.74-5.38Z" style="fill: #f7beb9;" />
+    <path d="M62.32,104c-2.93,10.14,5.41,23.67,22.77,22.77,17.36-.9,25.25-22.77,25.25-22.77,0,0-7.89-21.86-25.25-22.77-17.36-.9-25.7,12.62-22.77,22.77Z" style="stroke: #eda39e;&#10;        stroke-width: .75px;fill: #efaea9;" />
+    <path d="M88.08,148.89c-9.97-3.49-16.16-18.12-5.38-31.74,10.79-13.63,33.18-7.4,33.18-7.4,0,0,13.26,19.09,3.94,33.77-9.32,14.67-25.17,13.64-31.74,5.38Z" style="fill: #f7beb9;" />
+    <path d="M170.19,148.89c9.97-3.49,16.16-18.12,5.38-31.74-10.79-13.63-33.18-7.4-33.18-7.4,0,0-13.26,19.09-3.94,33.77,9.32,14.67,25.17,13.64,31.74,5.38Z" style="fill: #f7beb9;" />
+    <path d="M128,159.91c-10.14,2.93-23.67-5.41-22.77-22.77.9-17.36,22.77-25.25,22.77-25.25,0,0,21.86,7.89,22.77,25.25.9,17.36-12.62,25.7-22.77,22.77Z" style="stroke: #eda39e;&#10;        stroke-width: .75px;fill: #efaea9;" />
+    <path d="M195.95,104c2.93,10.14-5.41,23.67-22.77,22.77-17.36-.9-25.25-22.77-25.25-22.77,0,0,7.89-21.86,25.25-22.77,17.36-.9,25.7,12.62,22.77,22.77Z" style="stroke: #eda39e;&#10;        stroke-width: .75px;fill: #efaea9;" />
+    <path d="M175.28,55.67c9.97,3.49,16.16,18.12,5.38,31.74-10.79,13.63-33.18,7.4-33.18,7.4,0,0-13.26-19.09-3.94-33.77,9.32-14.67,25.17-13.64,31.74-5.38Z" style="fill: #f7beb9;" />
+    <path d="M128,40.28c-10.14-2.93-23.67,5.41-22.77,22.77.9,17.36,22.77,25.25,22.77,25.25,0,0,21.86-7.89,22.77-25.25.9-17.36-12.62-25.7-22.77-22.77Z" style="stroke: #eda39e;&#10;        stroke-width: .75px;fill: #efaea9;" />
+  </g></g><g id="atama" /><g id="kao">
+    <path d="M150.45,84.71c-13.83-6.15-20.75-6.06-22.45-5.91-1.7-.15-8.62-.24-22.45,5.91-9.7,4.3-19.11,19.69-10.55,35.8h.01c3.9,7.34,12.66,12.59,20.11,10.71,7.38-1.86,12.77-2.28,12.88-2.29.11,0,5.5.43,12.88,2.29,7.45,1.88,16.21-3.37,20.11-10.71h0c8.56-16.11-.85-31.5-10.55-35.8h0Z" style="fill: #f2dfae;" />
+    <path d="M128,126.06c-17.64.34-33-5.55-33-5.55,3.9,7.34,12.66,12.59,20.11,10.71,7.45-1.88,12.89-2.29,12.89-2.29,0,0,5.44.41,12.89,2.29,7.45,1.88,16.21-3.37,20.11-10.71,0,0-15.36,5.89-33,5.55Z" style="fill: #cea284;" />
+  </g>
+  <use id="kuchi" href="#kit-kuchi" />
+  <use id="me" href="#kit-me" />
+</symbol>
+<symbol id="k-dango" viewBox="0 0 256 256"><g id="te">
+    <path d="M178.74,107.9c23.58,4.44,26.09,27.69,25.09,33.11s-10.54,4.11-11.54-5.16-13.55-16.45-13.55-16.45v-11.5Z" style="fill: #6f6a60;" />
+    <path d="M77.26,107.9c-23.58,4.44-26.09,27.69-25.09,33.11s10.54,4.11,11.54-5.16,13.55-16.45,13.55-16.45v-11.5Z" style="fill: #6f6a60;" />
+  </g>
+  <g id="ashi">
+    <path d="M154.03,176.15s2.31,22.25,6.61,22.89,10.82,5.77-3.46,7.52c-14.28,1.76-10.95-28.62-10.95-28.62l7.79-1.79h.01Z" style="fill: #6f6a60;" />
+    <path d="M101.97,176.15s-2.31,22.25-6.61,22.89-10.82,5.77,3.46,7.52c14.28,1.76,10.95-28.62,10.95-28.62l-7.79-1.79h0Z" style="fill: #6f6a60;" />
+  </g>
+  <g id="karada">
+    <path d="M128,60c-63.85,0-60.88,61.15-56,90,5.33,21.33,24,33,56,35,32-2,50.67-13.67,56-35,4.88-28.85,7.85-90-56-90Z" style="fill: #85888b;" />
+    <path d="M96,70.51c21.33,4,42.67,4,64,0" style="fill: none; stroke: #565a5d; stroke-linecap: round; stroke-width: 1.8px;" />
+    <path d="M96,140.96c21.33,6.14,42.67,6.14,64,0" style="fill: none; stroke: #565a5d; stroke-linecap: round; stroke-width: 1.8px;" />
+    <path d="M96,153.34c21.33,6.14,42.67,6.14,64,0" style="fill: none; stroke: #565a5d; stroke-linecap: round; stroke-width: 1.8px;" />
+    <path d="M96,166.66c21.33,6.14,42.67,6.14,64,0" style="fill: none; stroke: #565a5d; stroke-linecap: round; stroke-width: 1.8px;" />
+  </g>
+  <g id="atama">
+    <path d="M120,64c-8-8-14-14.67-18-20" style="fill: none;stroke: #565a5d;&#10;        stroke-linecap: round;stroke-width: 2.4px;" />
+    <circle cx="102" cy="44" r="2.4" style="fill: #565a5d;" />
+    <path d="M136,64c8-8,14-14.67,18-20" style="fill: none;stroke: #565a5d;&#10;        stroke-linecap: round;stroke-width: 2.4px;" />
+    <circle cx="154" cy="44" r="2.4" style="fill: #565a5d;" />
+  </g>
+  <g id="kao">
+    <path d="M150.45,84.71c-13.83-6.15-20.75-6.06-22.45-5.91-1.7-.15-8.62-.24-22.45,5.91-9.7,4.3-19.11,19.69-10.55,35.8h.01c3.9,7.34,12.66,12.59,20.11,10.71,7.38-1.86,12.77-2.28,12.88-2.29.11,0,5.5.43,12.88,2.29,7.45,1.88,16.21-3.37,20.11-10.71h0c8.56-16.11-.85-31.5-10.55-35.8h0Z" style="fill: #f2dfae;" />
+    <path d="M128,126.06c-17.64.34-33-5.55-33-5.55,3.9,7.34,12.66,12.59,20.11,10.71,7.45-1.88,12.89-2.29,12.89-2.29,0,0,5.44.41,12.89,2.29,7.45,1.88,16.21-3.37,20.11-10.71,0,0-15.36,5.89-33,5.55Z" style="fill: #cea284;" />
+  </g>
+  <use id="kuchi" href="#kit-kuchi" />
+  <use id="me" href="#kit-me" />
+</symbol>
+<symbol id="k-tentou" viewBox="0 0 256 256"><g id="te">
+    <path d="M178.74,117.39s12.55-7.18,13.55-16.45,10.54-10.58,11.54-5.16-1.51,28.67-25.09,33.11v-11.5Z" style="fill: #3a3a37;" />
+    <path d="M77.26,117.39s-12.55-7.18-13.55-16.45-10.54-10.58-11.54-5.16,1.51,28.67,25.09,33.11v-11.5Z" style="fill: #3a3a37;" />
+  </g>
+  <g id="ashi">
+    <path d="M154.03,176.15s2.31,22.25,6.61,22.89,10.82,5.77-3.46,7.52c-14.28,1.76-10.95-28.62-10.95-28.62l7.79-1.79h.01Z" style="fill: #3a3a37;" />
+    <path d="M101.97,176.15s-2.31,22.25-6.61,22.89-10.82,5.77,3.46,7.52c14.28,1.76,10.95-28.62,10.95-28.62l-7.79-1.79h0Z" style="fill: #3a3a37;" />
+  </g>
+  <g id="karada">
+    <path id="karada1" data-name="karada" d="M191.37,114.76c-9.95-48.5-63.37-48.5-63.37-48.5,0,0-53.42,0-63.37,48.5-10.27,50.06,10.38,76.64,63.37,76.64s73.65-26.57,63.37-76.64Z" style="fill: #d34222;" />
+    <g style="clip-path: url(#clippath);">
+      <g>
+        <path d="M127.55,142.29c9.09-1.07,14.19,4.86,13.18,13.08s-10.06,15.43-19.12,12.58-9.22-10.57-7.55-17.11,9.2-8.05,13.49-8.55Z" style="fill: #3a3a37;" />
+        <g>
+          <path d="M82.78,118.02c7.51-.88,11.72,4.02,10.88,10.8s-8.31,12.74-15.79,10.39c-7.48-2.35-7.62-8.73-6.23-14.13s7.6-6.65,11.14-7.06Z" style="fill: #3a3a37;" />
+          <path d="M74.99,73.06c7.51-.88,11.72,4.02,10.88,10.8s-8.31,12.74-15.79,10.39c-7.48-2.35-7.62-8.73-6.23-14.13s7.6-6.65,11.14-7.06Z" style="fill: #3a3a37;" />
+          <path d="M97.66,171.23c11.85-1.39,18.49,6.34,17.18,17.05-1.31,10.71-13.12,20.11-24.92,16.4-11.81-3.72-12.02-13.77-9.84-22.3,2.19-8.53,11.99-10.49,17.58-11.15Z" style="fill: #3a3a37;" />
+        </g>
+        <g>
+          <path d="M172.33,118.02c-7.51-.88-11.72,4.02-10.88,10.8.83,6.79,8.31,12.74,15.79,10.39s7.62-8.73,6.23-14.13c-1.39-5.4-7.6-6.65-11.14-7.06Z" style="fill: #3a3a37;" />
+          <path d="M180.11,73.06c-7.51-.88-11.72,4.02-10.88,10.8.83,6.79,8.31,12.74,15.79,10.39s7.62-8.73,6.23-14.13-7.6-6.65-11.14-7.06Z" style="fill: #3a3a37;" />
+          <path d="M157.45,171.23c-11.85-1.39-18.49,6.34-17.18,17.05,1.31,10.71,13.12,20.11,24.92,16.4,11.81-3.72,12.02-13.77,9.84-22.3-2.19-8.53-11.99-10.49-17.58-11.15Z" style="fill: #3a3a37;" />
+        </g>
+      </g>
+    </g>
+  </g>
+  <g id="atama">
+    <path d="M118,60c-6.67-8-12.67-13.33-18-16" style="fill: none; stroke: #2c2c2a;&#10;        stroke-linecap: round;&#10;        stroke-width: 2.2px;" />
+    <circle cx="100" cy="44" r="3" style="fill: #2c2c2a;" />
+    <path d="M138,60c6.67-8,12.67-13.33,18-16" style="fill: none; stroke: #2c2c2a;&#10;        stroke-linecap: round;&#10;        stroke-width: 2.2px;" />
+    <circle cx="156" cy="44" r="3" style="fill: #2c2c2a;" />
+    <path d="M123.8,52.76c-15.78,4.12-17.8,20.2-17.8,20.2.91,1.04,15.36,2.59,20.68,2.31.88-.05,1.75-.05,2.64,0,5.32.28,19.78-1.27,20.68-2.31,0,0-2.03-16.08-17.8-20.2-2.75-.72-5.65-.72-8.39,0Z" style="fill: #2c2c2a;" />
+  </g>
+<g id="kao">
+    <path d="M150.45,84.71c-13.83-6.15-20.75-6.06-22.45-5.91-1.7-.15-8.62-.24-22.45,5.91-9.7,4.3-19.11,19.69-10.55,35.8h.01c3.9,7.34,12.66,12.59,20.11,10.71,7.38-1.86,12.77-2.28,12.88-2.29.11,0,5.5.43,12.88,2.29,7.45,1.88,16.21-3.37,20.11-10.71h0c8.56-16.11-.85-31.5-10.55-35.8h0Z" style="fill: #f2dfae;" />
+    <path d="M128,126.06c-17.64.34-33-5.55-33-5.55,3.9,7.34,12.66,12.59,20.11,10.71,7.45-1.88,12.89-2.29,12.89-2.29,0,0,5.44.41,12.89,2.29,7.45,1.88,16.21-3.37,20.11-10.71,0,0-15.36,5.89-33,5.55Z" style="fill: #d5b49c;" />
+  </g>
+  <use id="kuchi" href="#kit-kuchi" />
+  <use id="me" href="#kit-me" />
+</symbol>
+<symbol id="k-imomushi" viewBox="0 0 256 256"><g id="te">
+    <path d="M178.74,117.39s12.55-7.18,13.55-16.45,10.54-10.58,11.54-5.16-1.51,28.67-25.09,33.11v-11.5Z" style="fill: #8fb24a;" />
+    <path d="M77.26,117.39s-12.55-7.18-13.55-16.45-10.54-10.58-11.54-5.16,1.51,28.67,25.09,33.11v-11.5Z" style="fill: #8fb24a;" />
+  </g>
+  <g id="ashi">
+    <path d="M154.03,176.15s2.31,22.25,6.61,22.89,10.82,5.77-3.46,7.52c-14.28,1.76-10.95-28.62-10.95-28.62l7.79-1.79h.01Z" style="fill: #5f7d2f;" />
+    <path d="M101.97,176.15s-2.31,22.25-6.61,22.89-10.82,5.77,3.46,7.52c14.28,1.76,10.95-28.62,10.95-28.62l-7.79-1.79h0Z" style="fill: #5f7d2f;" />
+  </g>
+  <g id="karada">
+    <g>
+      <path d="M87.3,76c-8.6,11.04-11.18,26.96-6.57,32.46-5.34,9.24-8.67,13.95-7.8,23.45.88,9.5,9.45,14.08,7.47,17.4-2.32,3.89-2.58,8.91-.57,15.94,2.13,7.45,12.16,11.75,12.16,11.75,0,0-2.16,6.66,1.49,11.87,3.65,5.22,11.66,5.9,14.56,2.52.39,11.61,5.95,15.21,19.96,14.57V58s-24.99-2.18-40.7,18Z" style="fill: #8fb24a;" />
+      <path d="M175.27,108.47c4.61-5.51,2.03-21.42-6.57-32.46-15.71-20.18-40.69-18-40.69-18v147.96c14,.65,19.56-2.96,19.95-14.57,2.9,3.38,10.91,2.7,14.56-2.52,3.65-5.22,1.49-11.87,1.49-11.87,0,0,10.03-4.3,12.16-11.75,2.01-7.03,1.75-12.05-.57-15.94-1.98-3.32,6.59-7.89,7.47-17.4.88-9.5-2.46-14.21-7.8-23.45Z" style="fill: #8fb24a;" />
+    </g>
+    <g>
+      <ellipse cx="128" cy="189.73" rx="13.33" ry="10.23" style="fill: #e3ecc3;&#10;        opacity: .5;" />
+      <g>
+        <path d="M150.45,173.49s-8.84-4.42-21.92-4.42h-1.07c-13.08,0-21.92,4.42-21.92,4.42" style="fill: none; stroke: #5f7d2f;&#10;        stroke-linecap: round;opacity: .55;&#10;        stroke-width: 2.4px;" />
+        <path d="M155.6,157.98s-10.87-4.42-26.95-4.42h-1.32c-16.08,0-26.95,4.42-26.95,4.42" style="fill: none; stroke: #5f7d2f;&#10;        stroke-linecap: round;opacity: .55;&#10;        stroke-width: 2.4px;" />
+        <path d="M161,142.48s-13-4.42-32.21-4.42h-1.57c-19.22,0-32.21,4.42-32.21,4.42" style="fill: none; stroke: #5f7d2f;&#10;        stroke-linecap: round;opacity: .55;&#10;        stroke-width: 2.4px;" />
+      </g>
+    </g>
+  </g>
+  <g id="atama">
+    <g>
+      <path d="M118,58c-3.33-6.67-6-12-8-16" style="fill: none; stroke: #5f7d2f; stroke-linecap: round; stroke-width: 2.2px;" />
+      <circle cx="110" cy="42" r="2.6" style="fill: #5f7d2f;" />
+    </g>
+    <g>
+      <path d="M138,58c3.33-6.67,6-12,8-16" style="fill: none; stroke: #5f7d2f; stroke-linecap: round; stroke-width: 2.2px;" />
+      <circle cx="146" cy="42" r="2.6" style="fill: #5f7d2f;" />
+    </g>
+  </g>
+  <g id="kao">
+    <path d="M150.45,84.71c-13.83-6.15-20.75-6.06-22.45-5.91-1.7-.15-8.62-.24-22.45,5.91-9.7,4.3-19.11,19.69-10.55,35.8h.01c3.9,7.34,12.66,12.59,20.11,10.71,7.38-1.86,12.77-2.28,12.88-2.29.11,0,5.5.43,12.88,2.29,7.45,1.88,16.21-3.37,20.11-10.71h0c8.56-16.11-.85-31.5-10.55-35.8h0Z" style="fill: #f2dfae;" />
+    <path d="M128,126.06c-17.64.34-33-5.55-33-5.55,3.9,7.34,12.66,12.59,20.11,10.71,7.45-1.88,12.89-2.29,12.89-2.29,0,0,5.44.41,12.89,2.29,7.45,1.88,16.21-3.37,20.11-10.71,0,0-15.36,5.89-33,5.55Z" style="fill: #cea284;" />
+  </g>
+  <use id="kuchi" href="#kit-kuchi" />
+  <use id="me" href="#kit-me" />
+</symbol>
+<symbol id="k-chouchou" viewBox="0 0 256 256"><g id="karada">
+    <g id="karada1" data-name="karada">
+      <g>
+        <g>
+          <path d="M43.06,64.73c28.81-18,64.27,4.35,80.18,27.35,15.91,23-1.76,48.98-22.38,60.61-20.61,11.63-58.73,10.92-74.64-12.07-15.91-23-3.24-63.34,16.83-75.88Z" style="fill: #f4d469;" />
+          <path d="M96.6,143.5c15.76,8.9,26.18,30.2,14.06,47.72-12.12,17.52-32.93,24.04-48.69,15.15s-20.57-26.94-8.44-44.47c12.12-17.52,27.32-27.3,43.08-18.4Z" style="fill: #f4d469;" />
+          <path d="M44.97,102.6c-6.34-4.94-11.57-18.27,2.1-26.42s33.53,3.17,25.41,16.4-21.17,14.96-27.51,10.02Z" style="fill: #e0ab3c;" />
+          <path d="M72.68,124.34c3.2,4.18,4.39,13.71-5.43,17.04-9.82,3.33-20.48-7.06-13.34-14.54s15.58-6.68,18.77-2.49Z" style="fill: #fcede8;" />
+          <path d="M62.22,178.76c1.24-8.08,5.77-10.24,15.01-8.54s13.91,11.03,10.33,16.62-15.39,7.2-22.22,4.53-3.11-12.61-3.11-12.61Z" style="fill: #e0ab3c;" />
+        </g>
+        <g>
+          <path d="M230.58,140.61c-15.91,23-54.03,23.7-74.64,12.07s-38.29-37.61-22.38-60.61c15.91-23,51.37-45.35,80.18-27.35,20.07,12.54,32.74,52.89,16.83,75.88Z" style="fill: #f4d469;" />
+          <path d="M203.29,161.9c12.12,17.52,7.32,35.57-8.44,44.47-15.76,8.9-36.57,2.37-48.69-15.15-12.12-17.52-1.71-38.82,14.06-47.72,15.76-8.9,30.96.88,43.08,18.4Z" style="fill: #f4d469;" />
+          <path d="M211.83,102.6c6.34-4.94,11.57-18.27-2.1-26.42s-33.53,3.17-25.41,16.4c8.12,13.24,21.17,14.96,27.51,10.02Z" style="fill: #e0ab3c;" />
+          <path d="M184.12,124.34c-3.2,4.18-4.39,13.71,5.43,17.04,9.82,3.33,20.48-7.06,13.34-14.54s-15.58-6.68-18.77-2.49Z" style="fill: #fcede8;" />
+          <path d="M194.58,178.76c-1.24-8.08-5.77-10.24-15.01-8.54s-13.91,11.03-10.33,16.62,15.39,7.2,22.22,4.53,3.11-12.61,3.11-12.61Z" style="fill: #e0ab3c;" />
+        </g>
+      </g>
+      <g>
+        <path d="M128,120h0s-24.51,8.35-24.51,8.35c0,0,2.37,73.61,24.51,73.61s24.51-73.61,24.51-73.61l-24.51-8.35Z" style="fill: #c9a67d;" />
+        <g>
+          <path d="M136.93,180.73s-3.52-2.41-8.71-2.41h-.43c-5.2,0-8.71,2.41-8.71,2.41" style="fill: none; stroke: #674430;&#10;        stroke-linecap: round;opacity: .55;&#10;        stroke-width: 2.4px;" />
+          <path d="M138.97,165.24s-4.32-3.41-10.71-3.41h-.52c-6.39,0-10.71,3.41-10.71,3.41" style="fill: none; stroke: #674430;&#10;        stroke-linecap: round;opacity: .55;&#10;        stroke-width: 2.4px;" />
+          <path d="M141.12,149.75s-5.17-4.41-12.81-4.41h-.63c-7.64,0-12.81,4.41-12.81,4.41" style="fill: none; stroke: #674430;&#10;        stroke-linecap: round;opacity: .55;&#10;        stroke-width: 2.4px;" />
+        </g>
+      </g>
+    </g>
+    <path d="M155.96,67.53c-17.22-8.7-25.84-8.58-27.96-8.36-2.12-.21-10.74-.34-27.96,8.36-12.08,6.09-23.8,27.87-13.14,50.67h.01c4.86,10.39,15.77,17.82,25.05,15.16,9.19-2.63,15.9-3.23,16.04-3.24.14,0,6.85.61,16.04,3.24,9.28,2.66,20.19-4.77,25.05-15.16h.01c5.96-12.74,4.93-25.17.75-34.71-3.3-7.53-8.56-13.27-13.89-15.96h0Z" style="fill: #c9a67d;" />
+  </g>
+  <g id="atama">
+    <g>
+      <path d="M120,60c-5.33-9.33-10.67-16-16-20" style="fill: none; stroke: #674430; stroke-linecap: round; stroke-width: 2.2px;" />
+      <circle cx="103" cy="39" r="3.4" style="fill: #674430;" />
+    </g>
+    <g>
+      <path d="M136,60c5.33-9.33,10.67-16,16-20" style="fill: none; stroke: #674430; stroke-linecap: round; stroke-width: 2.2px;" />
+      <circle cx="153" cy="39" r="3.4" style="fill: #674430;" />
+    </g>
+  </g>
+<g id="kao">
+    <path d="M150.45,84.71c-13.83-6.15-20.75-6.06-22.45-5.91-1.7-.15-8.62-.24-22.45,5.91-9.7,4.3-19.11,19.69-10.55,35.8h.01c3.9,7.34,12.66,12.59,20.11,10.71,7.38-1.86,12.77-2.28,12.88-2.29.11,0,5.5.43,12.88,2.29,7.45,1.88,16.21-3.37,20.11-10.71h0c8.56-16.11-.85-31.5-10.55-35.8h0Z" style="fill: #f2dfae;" />
+    <path d="M128,126.06c-17.64.34-33-5.55-33-5.55,3.9,7.34,12.66,12.59,20.11,10.71,7.45-1.88,12.89-2.29,12.89-2.29,0,0,5.44.41,12.89,2.29,7.45,1.88,16.21-3.37,20.11-10.71,0,0-15.36,5.89-33,5.55Z" style="fill: #dec685;" />
+  </g>
+  <use id="kuchi" href="#kit-kuchi" />
+  <use id="me" href="#kit-me" />
+</symbol>
+<symbol id="k-tonbo" viewBox="0 0 256 256"><g id="karada">
+    <g>
+      <g>
+        <path d="M106.86,135.67s-79.86-9.91-85.44-6.82-9.29,23.54,18.59,27.88,74.22-9.89,73.67-14.24-6.81-6.83-6.81-6.83Z" style="fill: #d3e3e5;" />
+        <path d="M105.44,118.77S38.46,79.74,29.17,79.74s-15.49,8.05-15.49,14.25-.62,19.21,16.73,24.78,77.44,22.92,77.75,18.59-2.73-18.59-2.73-18.59Z" style="fill: #d3e3e5;" />
+      </g>
+      <g>
+        <path d="M148.14,135.67s79.86-9.91,85.44-6.82,9.29,23.54-18.59,27.88c-27.88,4.34-74.22-9.89-73.67-14.24s6.81-6.83,6.81-6.83Z" style="fill: #d3e3e5;" />
+        <path d="M149.56,118.77s66.97-39.03,76.27-39.03,15.49,8.05,15.49,14.25.62,19.21-16.73,24.78c-17.35,5.58-77.44,22.92-77.75,18.59s2.73-18.59,2.73-18.59Z" style="fill: #d3e3e5;" />
+      </g>
+    </g>
+    <g id="karada1" data-name="karada">
+      <g id="tail">
+        <path d="M111.76,128.43c-2.62,29.73,0,57.28,7.87,82.64,5.25,6.12,10.49,6.12,15.74,0,7.87-25.36,10.49-52.91,7.87-82.64h-31.48Z" style="fill: #5f8f93;" />
+        <path d="M123.56,133.67c-1.75,26.23-.44,50.72,3.94,73.46,4.37-22.74,5.68-47.22,3.94-73.46h-7.87Z" style="fill: #c4dadb;&#10;        opacity: .55;" />
+        <path d="M115.69,149.41c7.87,3.5,15.74,3.5,23.61,0" style="fill: none; opacity: .6;&#10;        stroke: #3d696d;&#10;        stroke-linecap: round;&#10;        stroke-width: 2.39px;" />
+        <path d="M117.01,167.78c7,3.5,13.99,3.5,20.99,0" style="fill: none; opacity: .6;&#10;        stroke: #3d696d;&#10;        stroke-linecap: round;&#10;        stroke-width: 2.39px;" />
+        <path d="M119.63,186.14c5.25,2.62,10.49,2.62,15.74,0" style="fill: none; opacity: .6;&#10;        stroke: #3d696d;&#10;        stroke-linecap: round;&#10;        stroke-width: 2.39px;" />
+        <path d="M122.25,200.57c3.5,1.75,7,1.75,10.49,0" style="fill: none; opacity: .6;&#10;        stroke: #3d696d;&#10;        stroke-linecap: round;&#10;        stroke-width: 2.39px;" />
+      </g>
+      <path d="M157.81,77.13c-18.67-8.3-28.02-8.18-30.31-7.98-2.3-.2-11.64-.32-30.31,7.98-13.1,5.81-25.8,26.59-14.25,48.34h.01c5.27,9.91,17.09,17,27.15,14.46,9.97-2.51,17.24-3.08,17.39-3.09.15,0,7.43.58,17.39,3.09,10.06,2.54,21.89-4.55,27.15-14.46h.01c11.56-21.75-1.15-42.53-14.25-48.34h0Z" style="fill: #5f8f93;" />
+    </g>
+  </g>
+  <g id="kao">
+    <path d="M149.86,84.38c-13.78-6.13-20.67-6.04-22.36-5.89-1.69-.15-8.59-.24-22.36,5.89-9.66,4.28-19.04,19.61-10.51,35.66h0c3.88,7.31,12.61,12.54,20.03,10.67,7.35-1.85,12.72-2.27,12.83-2.28.11,0,5.48.43,12.83,2.28,7.42,1.87,16.15-3.36,20.03-10.67h0c8.53-16.05-.85-31.38-10.51-35.66h0Z" style="fill: #f2dfae;" />
+    <path d="M127.5,125.57c-17.57.34-32.87-5.53-32.87-5.53,3.88,7.31,12.61,12.54,20.03,10.67,7.42-1.87,12.84-2.28,12.84-2.28,0,0,5.42.41,12.84,2.28,7.42,1.87,16.15-3.36,20.03-10.67,0,0-15.3,5.87-32.87,5.53Z" style="fill: #cea284;" />
+  </g>
+  <path id="kuchi" d="M128.83,115.3l-3.7-1.46c.23-.77,1.68-.52,2.36-.27.68.25,1.6.87,1.33,1.73h0Z" style="fill: #4c372c;" />
+  <g id="me">
+    <g>
+      <path d="M146.85,108.07c3.44-3.04,3.87-7.81,1.61-11.58-1.18-1.97-2.54-4.38-4.43-3.84-4.03,1.12-3.34,14.35.57,15.94.65.26,1.52.14,2.24-.5h0Z" style="fill: #3a231e;" />
+      <path d="M143.3,102.79c-.13-.46-.63-.15-.38.18.05.03.12.13.13.2.11,1.64.75,3.44,2.27,4.56,1.58-1.05,2.51-2.47,3.11-4.24-1.71,1.23-3.56.55-5.07-.58-.05-.02-.07-.08-.07-.12h0Z" style="fill: #794f26;" />
+      <ellipse cx="145.12" cy="96.58" rx="1.78" ry="1.5" transform="translate(36.44 232.88) rotate(-85.08)" style="fill: #fff;" />
+    </g>
+    <g>
+      <path d="M108.15,108.07c-3.44-3.04-3.87-7.81-1.61-11.58,1.18-1.97,2.54-4.38,4.43-3.84,4.03,1.12,3.34,14.35-.57,15.94-.65.26-1.52.14-2.24-.5h0Z" style="fill: #3a231e;" />
+      <path d="M111.7,102.79c.13-.46.63-.15.38.18-.05.03-.12.13-.13.2-.11,1.64-.75,3.44-2.27,4.56-1.58-1.05-2.51-2.47-3.11-4.24,1.71,1.23,3.56.55,5.07-.58.05-.02.07-.08.07-.12,0,0,0,0,0,0Z" style="fill: #794f26;" />
+      <ellipse cx="109.9" cy="96.57" rx="1.5" ry="1.78" transform="translate(-7.88 9.78) rotate(-4.92)" style="fill: #fff;" />
+    </g>
+  </g>
+  <g id="atama">
+    <path d="M111.41,81.8s-18.97-5.5-13.14-17c5.84-11.5,14.01-10.34,21.58-6.71,7.57,3.63,7.66,17.81-8.45,23.71Z" style="fill: #5f8f93;" />
+    <path d="M143.59,81.8s18.97-5.5,13.14-17c-5.84-11.5-14.01-10.34-21.58-6.71s-7.66,17.81,8.45,23.71Z" style="fill: #5f8f93;" />
+  </g>
+</symbol>
+<symbol id="k-kumo" viewBox="0 0 256 256"><g id="karada">
+    <g>
+      <g>
+        <g>
+          <g>
+            <path d="M91.58,125.03s-30.32-13.4-24.3-42.87" style="fill: none; stroke: #9c7a52;&#10;        stroke-linecap: round;&#10;        stroke-linejoin: round;&#10;        stroke-width: 7px;" />
+            <circle cx="67.65" cy="81.03" r="4.57" style="fill: #9c7a52;" />
+          </g>
+          <g>
+            <path d="M94.63,134.42s-39.79,1.33-49.82-28.76" style="fill: none; stroke: #9c7a52;&#10;        stroke-linecap: round;&#10;        stroke-linejoin: round;&#10;        stroke-width: 7px;" />
+            <circle cx="43.48" cy="103.59" r="4.57" style="fill: #9c7a52;" />
+          </g>
+          <g>
+            <path d="M82.73,149.41s-32.23-1.95-41.26,17.9" style="fill: none; stroke: #9c7a52;&#10;        stroke-linecap: round;&#10;        stroke-linejoin: round;&#10;        stroke-width: 7px;" />
+            <circle cx="40.23" cy="169.86" r="4.57" style="fill: #9c7a52;" />
+          </g>
+          <g>
+            <path d="M88.57,155.33s-36.25,13.1-37.71,54.09" style="fill: none; stroke: #9c7a52;&#10;        stroke-linecap: round;&#10;        stroke-linejoin: round;&#10;        stroke-width: 7px;" />
+            <circle cx="50.86" cy="208.65" r="4.57" style="fill: #9c7a52;" />
+          </g>
+        </g>
+        <g>
+          <g>
+            <path d="M163.79,125.03s30.32-13.4,24.3-42.87" style="fill: none; stroke: #9c7a52;&#10;        stroke-linecap: round;&#10;        stroke-linejoin: round;&#10;        stroke-width: 7px;" />
+            <circle cx="187.72" cy="81.03" r="4.57" style="fill: #9c7a52;" />
+          </g>
+          <g>
+            <path d="M160.74,134.42s39.79,1.33,49.82-28.76" style="fill: none; stroke: #9c7a52;&#10;        stroke-linecap: round;&#10;        stroke-linejoin: round;&#10;        stroke-width: 7px;" />
+            <circle cx="211.89" cy="103.59" r="4.57" style="fill: #9c7a52;" />
+          </g>
+          <g>
+            <path d="M172.64,149.41s32.23-1.95,41.26,17.9" style="fill: none; stroke: #9c7a52;&#10;        stroke-linecap: round;&#10;        stroke-linejoin: round;&#10;        stroke-width: 7px;" />
+            <circle cx="215.13" cy="169.86" r="4.57" style="fill: #9c7a52;" />
+          </g>
+          <g>
+            <path d="M166.79,155.33s36.25,13.1,37.71,54.09" style="fill: none; stroke: #9c7a52;&#10;        stroke-linecap: round;&#10;        stroke-linejoin: round;&#10;        stroke-width: 7px;" />
+            <circle cx="204.51" cy="208.65" r="4.57" style="fill: #9c7a52;" />
+          </g>
+        </g>
+      </g>
+      <path d="M178.29,166.55c-1.96-42.02-17.18-44.23-29.86-44.23h-41.86c-12.68,0-27.9,2.21-29.86,44.23-2.35,50.46,50.79,57.13,50.79,57.13,0,0,53.14-6.67,50.79-57.13Z" style="fill: #9c7a52;" />
+      <path d="M155.96,67.53c-17.22-8.7-25.84-8.58-27.96-8.36-2.12-.21-10.74-.34-27.96,8.36-12.08,6.09-23.8,27.87-13.14,50.67h.01c4.86,10.39,15.77,17.82,25.05,15.16,9.19-2.63,15.9-3.23,16.04-3.24.14,0,6.85.61,16.04,3.24,9.28,2.66,20.19-4.77,25.05-15.16h0c5.96-12.74,4.93-25.17.75-34.71-3.3-7.53-8.56-13.27-13.89-15.96h0Z" style="fill: #9c7a52;" />
+    </g>
+    <ellipse cx="127.5" cy="149.41" rx="25.9" ry="29.88" style="isolation: isolate;fill: #c9b08a;&#10;        opacity: .5;" />
+  </g>
+  <g id="atama">
+    <path d="M121.51,59.05c-.53-2.32-1.14-5.97-.94-9.65.17-3.01-3.22-4.84-5.66-3.06-5.18,3.78-10.41,10.19-11.49,18.47-.35,2.7,2.35,4.8,4.87,3.75,4.36-1.81,8.83-4.18,11.48-5.65,1.37-.76,2.09-2.33,1.75-3.86Z" style="fill: #6e5232;" />
+    <path d="M133.49,59.05c.53-2.32,1.14-5.97.94-9.65-.17-3.01,3.22-4.84,5.66-3.06,5.18,3.78,10.41,10.19,11.49,18.47.35,2.7-2.35,4.8-4.87,3.75-4.36-1.81-8.83-4.18-11.48-5.65-1.37-.76-2.09-2.33-1.75-3.86Z" style="fill: #6e5232;" />
+  </g>
+  <g id="kao">
+    <path d="M149.86,84.38c-13.78-6.13-20.67-6.04-22.36-5.89-1.69-.15-8.59-.24-22.36,5.89-9.66,4.28-19.04,19.61-10.51,35.66h0c3.88,7.31,12.61,12.54,20.03,10.67,7.35-1.85,12.72-2.27,12.83-2.28.11,0,5.48.43,12.83,2.28,7.42,1.87,16.15-3.36,20.03-10.67h0c8.53-16.05-.85-31.38-10.51-35.66h0Z" style="fill: #f2dfae;" />
+    <path d="M127.5,125.57c-17.57.34-32.87-5.53-32.87-5.53,3.88,7.31,12.61,12.54,20.03,10.67,7.42-1.87,12.84-2.28,12.84-2.28,0,0,5.42.41,12.84,2.28,7.42,1.87,16.15-3.36,20.03-10.67,0,0-15.3,5.87-32.87,5.53Z" style="fill: #cea284;" />
+  </g>
+  <path id="kuchi" d="M128.83,115.3l-3.7-1.46c.23-.77,1.68-.52,2.36-.27.68.25,1.6.87,1.33,1.73h0Z" style="fill: #4c372c;" />
+  <g id="me">
+    <g>
+      <path d="M146.85,108.07c3.44-3.04,3.87-7.81,1.61-11.58-1.18-1.97-2.54-4.38-4.43-3.84-4.03,1.12-3.34,14.35.57,15.94.65.26,1.52.14,2.24-.5h0Z" style="fill: #3a231e;" />
+      <path d="M143.3,102.79c-.13-.46-.63-.15-.38.18.05.03.12.13.13.2.11,1.64.75,3.44,2.27,4.56,1.58-1.05,2.51-2.47,3.11-4.24-1.71,1.23-3.56.55-5.07-.58-.05-.02-.07-.08-.07-.12h0Z" style="fill: #794f26;" />
+      <ellipse cx="145.12" cy="96.58" rx="1.78" ry="1.5" transform="translate(36.44 232.88) rotate(-85.08)" style="fill: #fff;" />
+    </g>
+    <g>
+      <path d="M108.15,108.07c-3.44-3.04-3.87-7.81-1.61-11.58,1.18-1.97,2.54-4.38,4.43-3.84,4.03,1.12,3.34,14.35-.57,15.94-.65.26-1.52.14-2.24-.5h0Z" style="fill: #3a231e;" />
+      <path d="M111.7,102.79c.13-.46.63-.15.38.18-.05.03-.12.13-.13.2-.11,1.64-.75,3.44-2.27,4.56-1.58-1.05-2.51-2.47-3.11-4.24,1.71,1.23,3.56.55,5.07-.58.05-.02.07-.08.07-.12,0,0,0,0,0,0Z" style="fill: #794f26;" />
+      <ellipse cx="109.9" cy="96.57" rx="1.5" ry="1.78" transform="translate(-7.88 9.78) rotate(-4.92)" style="fill: #fff;" />
+    </g>
+  </g>
+</symbol>
+    </defs></svg>
+
+    <header>
+      <span class="ttl">こもりむし</span>
+      <span class="live">Claude が みています</span>
+    </header>
+
+    <div class="stage" id="stage">
+      <div class="frame"></div>
+      <img class="photo" id="photo" alt="">
+      <div class="scrim" id="scrim"></div>
+
+      <div class="hint" id="hint"><span class="big">🔍</span>みつけた いきものを<br>しゃしんに とってみよう</div>
+
+      <div class="think" id="think"><div class="dots"><i></i><i></i><i></i></div><div class="tx">なにが いるかな…</div></div>
+
+      <div class="glow"></div>
+      <div class="flash"></div>
+      <div class="ring"></div>
+      <div class="ring2"></div>
+      <div class="burst" id="burst"></div>
+      <div class="charwrap" id="charwrap"><svg viewBox="0 0 256 256"><use id="charuse" href="#k-leaf"></use></svg></div>
+
+      <div class="qbig" id="qbig"><div class="qm">？</div></div>
+      <div class="err hide" id="err"></div>
+    </div>
+
+    <div class="plate">
+      <p class="kidword" id="kidword"></p>
+      <div class="parent" id="parent">
+        <span class="wa" id="wa"></span><span class="ga" id="ga"></span>
+        <span class="note" id="note"></span>
+        <span class="conf" id="conf"></span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="shoot">しゃしんで さがす</button>
+      <div class="row hide" id="after">
+        <button class="gbtn gs" id="again">もういちど</button>
+        <button class="gbtn gp" id="collect">ずかんに いれる</button>
+      </div>
+    </div>
+
+    <div class="zukan">
+      <div class="lab">きょう みつけた <b id="cnt">0</b></div>
+      <div class="strip" id="strip"><span class="empty">まだ だれも いないよ</span></div>
+    </div>
+
+    <input type="file" id="file" accept="image/*" capture="environment" style="display:none">
+  </div>
+
+<script>
+// ===== 設定 =====
+// 中継サーバー(Cloudflare Worker)のURL。空のままなら Anthropic API を直接呼ぶ
+// （claude.ai のアーティファクト内でのみ直接呼び出しが動く。iPhone配布時は必ずWorkerを立ててここに貼る）
+const PROXY_URL = "";
+const MODEL = "claude-sonnet-4-6"; // Worker側でモデルを固定している場合はそちらが優先
+
+const KOBITO = {
+  happa:{id:'#k-leaf',  name:'はっぱ'},
+  hana:{id:'#k-hana',   name:'はな'},
+  dango:{id:'#k-dango', name:'だんご'},
+  tentou:{id:'#k-tentou',name:'てんとう'},
+  imomushi:{id:'#k-imomushi',name:'いもむし'},
+  chouchou:{id:'#k-chouchou',name:'ちょうちょ'},
+  tonbo:{id:'#k-tonbo', name:'トンボ'},
+  kumo:{id:'#k-kumo',   name:'クモ'}
+};
+// 出現エフェクトのカテゴリ（共通層は同じ、虫だけ出方を変える）
+const CAT = { happa:'plant', hana:'plant', dango:'crawl', tentou:'crawl', imomushi:'crawl', kumo:'crawl', tonbo:'fly', chouchou:'fly' };
+
+const $ = id => document.getElementById(id);
+const stage=$('stage'), photo=$('photo'), scrim=$('scrim'), hint=$('hint'),
+      think=$('think'), charwrap=$('charwrap'), charuse=$('charuse'), qbig=$('qbig'),
+      err=$('err'), kidword=$('kidword'), parent=$('parent'), shoot=$('shoot'), after=$('after');
+let collected = [];
+let last = null;
+
+shoot.onclick = ()=> $('file').click();
+$('again').onclick = reset;
+$('collect').onclick = collect;
+$('file').onchange = e => { const f=e.target.files[0]; if(f) handle(f); e.target.value=''; };
+
+function reset(){
+  stage.classList.remove('pop','plant','crawl','fly');
+  $('burst').innerHTML='';
+  photo.classList.remove('show'); scrim.classList.remove('show');
+  think.classList.remove('show'); qbig.classList.remove('show');
+  kidword.classList.remove('show'); parent.classList.remove('show');
+  charwrap.style.animation='none'; void charwrap.offsetWidth; charwrap.style.animation='';
+  charwrap.style.opacity=0; charwrap.style.transform='scale(.4)';
+  err.classList.add('hide'); hint.style.display='';
+  after.classList.add('hide'); shoot.classList.remove('hide'); shoot.disabled=false;
+  last=null;
+}
+
+function handle(file){
+  reset();
+  hint.style.display='none';
+  const reader=new FileReader();
+  reader.onload = ()=>{
+    const img=new Image();
+    img.onload = ()=>{
+      // downscale to max 768 for a fast, light request（判定には十分・トークン量はほぼ半減）
+      const max=768; let {width:w,height:h}=img;
+      const s=Math.min(1, max/Math.max(w,h)); w=Math.round(w*s); h=Math.round(h*s);
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      const dataUrl=c.toDataURL('image/jpeg',0.8);
+      photo.src=dataUrl; photo.classList.add('show'); scrim.classList.add('show');
+      shoot.disabled=true; shoot.classList.add('hide');
+      think.classList.add('show');
+      judge(dataUrl.split(',')[1]);
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+const SYS = `あなたは幼児向け自然観察アプリ「こもりむし」の はんてい エンジン。3歳児が散歩で撮った写真の主役を、見た目の「かたち」で次の8グループのどれか1つに分類する。種の厳密同定よりグループ分けを優先。
+happa=葉が主役（葉っぱ・クローバーの葉・木の葉）
+hana=花が主役（タンポポ・シロツメクサの花・ハルジオン等）
+dango=地を歩く丸い殻のむし（ダンゴムシ・ワラジムシ）
+tentou=つやつや丸い甲虫（テントウムシ・カナブン・コガネムシ）
+imomushi=芋虫・毛虫
+chouchou=チョウ・ガ
+tonbo=トンボ
+kumo=クモ
+どれにも当てはまらない（ドングリ・きのこ・鳥・石・人・生きものが写っていない等）は group を "none"。
+必ず次のJSONだけを返す。前置き・コードフェンス・説明は禁止。
+{"group":"happa|hana|dango|tentou|imomushi|chouchou|tonbo|kumo|none","kidword":"3歳に見せるひらがなの一言。例: はっぱの こびとだ！","wamei":"和名の推定。例: シロツメクサ","gakumei":"学名の推定。例: Trifolium repens","confidence":"high|mid|low","note":"親向けの短い一文。特徴か季節。断定しすぎない"}
+group が none のとき: kidword は やさしい一言、wamei と gakumei は ""、note に写っているものを書く。`;
+
+async function judge(b64){
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), 30000); // 30秒でタイムアウト
+  try{
+    const endpoint = PROXY_URL || "https://api.anthropic.com/v1/messages";
+    const res = await fetch(endpoint,{
+      method:"POST", headers:{"Content-Type":"application/json"}, signal: ctrl.signal,
+      body: JSON.stringify({
+        model:MODEL, max_tokens:1000, system:SYS,
+        messages:[{ role:"user", content:[
+          { type:"image", source:{ type:"base64", media_type:"image/jpeg", data:b64 } },
+          { type:"text", text:"この写真をはんていして。JSONだけ返して。" }
+        ]}]
+      })
+    });
+    if(!res.ok){
+      throw new Error("HTTP "+res.status+(res.status===401?" APIキーを確認":""));
+    }
+    const data = await res.json();
+    const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+    const clean = text.replace(/```json|```/g,"").trim();
+    const m = clean.match(/\{[\s\S]*\}/);
+    const out = JSON.parse(m ? m[0] : clean);
+    show(out);
+  }catch(e){
+    think.classList.remove('show');
+    err.textContent = e.name==="AbortError"
+      ? "じかんが かかりすぎたよ。もういちど！"
+      : "うまく みえなかった。もういちど！"+(e.message&&e.message.startsWith("HTTP")?"（"+e.message+"）":"");
+    err.classList.remove('hide');
+    after.classList.remove('hide');
+    console.error(e);
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+// 粒子バースト：虫は多め・速め・あたたかい色、植物はひかえめ・緑寄り
+function spawnBurst(cat){
+  const burst=$('burst'); burst.innerHTML='';
+  const insect = (cat==='crawl' || cat==='fly');
+  const n = insect ? 22 : 13;
+  const reach = insect ? 130 : 95;
+  const pal = insect
+    ? ['#FAC775','#FAEEDA','#F7B05B','#FFE08A','#E7C58B','#C0DD97']
+    : ['#C0DD97','#A9C487','#FAEEDA','#FAC775'];
+  for(let i=0;i<n;i++){
+    const a = (Math.PI*2*i/n) + (Math.random()-0.5)*0.5;
+    const dist = (insect?60:48) + Math.random()*reach*0.55;
+    const sz = 4 + Math.random()*(insect?8:6);
+    const p=document.createElement('span'); p.className='p';
+    p.style.width=sz+'px'; p.style.height=sz+'px';
+    p.style.background=pal[i%pal.length];
+    p.style.setProperty('--tx',(Math.cos(a)*dist).toFixed(1)+'px');
+    p.style.setProperty('--ty',(Math.sin(a)*dist).toFixed(1)+'px');
+    p.style.setProperty('--s',(0.25+Math.random()*0.7).toFixed(2));
+    p.style.setProperty('--d',((insect?0.6:0.75)+Math.random()*0.45).toFixed(2)+'s');
+    burst.appendChild(p);
+  }
+  const sn = insect ? 6 : 4;
+  for(let i=0;i<sn;i++){
+    const a = Math.PI*2*i/sn + 0.4;
+    const dist = 46 + Math.random()*42;
+    const s=document.createElement('span'); s.className='spark'; s.textContent='✦';
+    s.style.setProperty('--sx',(Math.cos(a)*dist).toFixed(1)+'px');
+    s.style.setProperty('--sy',(Math.sin(a)*dist).toFixed(1)+'px');
+    s.style.fontSize=(12+Math.random()*10)+'px';
+    s.style.animationDelay=(Math.random()*0.25).toFixed(2)+'s';
+    burst.appendChild(s);
+  }
+}
+
+function show(out){
+  think.classList.remove('show');
+  const k = KOBITO[out.group];
+  if(k){
+    last = {group:out.group, ...k};
+    const cat = CAT[out.group] || 'crawl';
+    charuse.setAttribute('href', k.id);
+    stage.classList.add(cat);
+    spawnBurst(cat);
+    requestAnimationFrame(()=>{ stage.classList.add('pop'); });
+    kidword.textContent = out.kidword || (k.name+'の こびとだ！');
+    $('wa').textContent = out.wamei || '';
+    $('ga').textContent = out.gakumei ? out.gakumei : '';
+    $('note').textContent = out.note || '';
+    const cf=$('conf'); cf.textContent = ({high:'たしか',mid:'たぶん',low:'…かも'})[out.confidence]||'';
+    cf.className = 'conf '+(out.confidence||'mid');
+    setTimeout(()=>{ kidword.classList.add('show'); parent.classList.add('show'); }, 700);
+    $('collect').classList.remove('hide');
+  } else {
+    // たね・きのこ等 = まだ一座にいない / 生きもの以外
+    qbig.classList.add('show');
+    kidword.textContent = out.kidword || 'うーん、まだ ずかんに いないかも';
+    $('wa').textContent=''; $('ga').textContent='';
+    $('note').textContent = out.note || '';
+    $('conf').textContent='';
+    setTimeout(()=>{ kidword.classList.add('show'); parent.classList.add('show'); }, 250);
+    $('collect').classList.add('hide');
+  }
+  after.classList.remove('hide');
+}
+
+function collect(){
+  if(!last) return;
+  if(!collected.includes(last.group)){
+    collected.push(last.group);
+    const strip=$('strip'); const e=strip.querySelector('.empty'); if(e) e.remove();
+    const chip=document.createElement('div'); chip.className='chip';
+    chip.innerHTML='<svg viewBox="0 0 256 256"><use href="'+last.id+'"></use></svg>';
+    strip.appendChild(chip);
+    $('cnt').textContent=collected.length;
+  }
+  reset();
+}
+</script>
+</body>
+</html>
